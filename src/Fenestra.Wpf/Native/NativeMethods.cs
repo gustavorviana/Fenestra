@@ -60,4 +60,19 @@ internal static class NativeMethods
 
     [DllImport("gdi32.dll")]
     internal static extern bool DeleteObject(IntPtr hObject);
+
+    // Monitor
+    internal const uint MONITOR_DEFAULTTONULL = 0;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    internal static extern IntPtr MonitorFromRect(ref RECT lprc, uint dwFlags);
 }

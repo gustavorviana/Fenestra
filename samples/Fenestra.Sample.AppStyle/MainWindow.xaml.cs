@@ -1,18 +1,17 @@
+using Fenestra.Core;
+using Fenestra.Core.Models;
+using Fenestra.Core.Tray;
+using Fenestra.Wpf.Tray;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
-using Fenestra.Core;
-using Fenestra.Core.Models;
-using Fenestra.Core.Tray;
-using Fenestra.Wpf.Tray;
 
 namespace Fenestra.Sample.AppStyle;
 
-public partial class MainWindow : Window, IMinimizeToTray
+public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
 {
     private readonly ITrayIconService _tray;
     private readonly ITaskbarProvider _taskbar;

@@ -17,6 +17,8 @@ public class FenestraBuilder
     private AppInfo? _appInfo;
     private IWpfApplication? _wpfAppInstance;
     private string[]? _args;
+    private string? _windowPositionDirectory;
+    private Type? _windowPositionStorageType;
     private readonly List<Action<ILoggingBuilder>> _loggingActions = new();
     private readonly List<Action<IServiceCollection>> _serviceActions = new();
 
@@ -143,6 +145,24 @@ public class FenestraBuilder
     }
 
     /// <summary>
+    /// Uses a custom <see cref="IWindowPositionStorage"/> implementation.
+    /// </summary>
+    public FenestraBuilder UseWindowPositionStorage<T>() where T : class, IWindowPositionStorage
+    {
+        _windowPositionStorageType = typeof(T);
+        return this;
+    }
+
+    /// <summary>
+    /// Sets the directory for the default JSON window position storage.
+    /// </summary>
+    public FenestraBuilder UseWindowPositionDirectory(string directory)
+    {
+        _windowPositionDirectory = directory;
+        return this;
+    }
+
+    /// <summary>
     /// Configures logging for the application.
     /// </summary>
     public FenestraBuilder ConfigureLogging(Action<ILoggingBuilder> configure)
@@ -207,6 +227,21 @@ public class FenestraBuilder
             }
 
             services.AddSingleton(appInfo);
+
+            if (_windowPositionStorageType != null)
+            {
+                services.AddSingleton(typeof(IWindowPositionStorage), _windowPositionStorageType);
+            }
+            else
+            {
+                var directory = _windowPositionDirectory
+                    ?? System.IO.Path.Combine(
+                        System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData),
+                        appInfo.AppName,
+                        "WindowState");
+                services.AddSingleton<IWindowPositionStorage>(new JsonWindowPositionStorage(directory));
+            }
+
             services.AddSingleton<WindowStateService>();
             services.AddSingleton<IWindowManager, WindowManager>();
             services.AddSingleton<IDialogService, DialogService>();

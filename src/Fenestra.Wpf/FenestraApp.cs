@@ -93,6 +93,10 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         }
 
         mainWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+
+        var windowState = Services.GetRequiredService<Services.WindowStateService>();
+        windowState.Attach(mainWindow);
+
         MainWindow = mainWindow;
 
         var minimizeToTray = Services.GetService(typeof(Services.MinimizeToTrayService)) as Services.MinimizeToTrayService;

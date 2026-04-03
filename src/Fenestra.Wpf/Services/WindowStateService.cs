@@ -1,40 +1,49 @@
-using System.IO;
-using System.Text.Json;
 using System.Windows;
 using Fenestra.Core;
 using Fenestra.Core.Models;
+using Fenestra.Wpf.Native;
 
 namespace Fenestra.Wpf.Services;
 
 internal class WindowStateService
 {
-    private readonly string _stateFolder;
-    private readonly Dictionary<string, WindowStateData> _cache = new();
+    private readonly IWindowPositionStorage _storage;
 
-    public WindowStateService(AppInfo appInfo)
+    public WindowStateService(IWindowPositionStorage storage)
     {
-        var appData = System.Environment.GetFolderPath(System.Environment.SpecialFolder.LocalApplicationData);
-        _stateFolder = Path.Combine(appData, appInfo.AppName, "WindowState");
+        _storage = storage;
     }
 
     public void Attach(Window window)
     {
         if (window is not IRememberWindowState) return;
 
-        var key = window.GetType().FullName ?? window.GetType().Name;
-        var state = Load(key);
+        var key = GetKey(window);
+        var data = _storage.Load(key);
 
-        if (state != null)
+        if (data != null)
         {
-            window.Left = state.Left;
-            window.Top = state.Top;
-            window.Width = state.Width;
-            window.Height = state.Height;
-            window.WindowState = (WindowState)state.State;
-            window.WindowStartupLocation = WindowStartupLocation.Manual;
+            if (IsVisibleOnAnyMonitor(data))
+            {
+                window.Left = data.Left;
+                window.Top = data.Top;
+                window.Width = data.Width;
+                window.Height = data.Height;
+                window.WindowState = (WindowState)data.State;
+                window.WindowStartupLocation = WindowStartupLocation.Manual;
+            }
+            else
+            {
+                _storage.Delete(key);
+            }
         }
 
         window.Closing += (_, _) => Save(key, window);
+        window.IsVisibleChanged += (_, _) =>
+        {
+            if (!window.IsVisible)
+                Save(key, window);
+        };
     }
 
     private void Save(string key, Window window)
@@ -43,7 +52,7 @@ internal class WindowStateService
             ? WindowState.Normal
             : window.WindowState;
 
-        var data = new WindowStateData
+        var data = new WindowPositionData
         {
             Left = window.RestoreBounds.Left,
             Top = window.RestoreBounds.Top,
@@ -52,54 +61,24 @@ internal class WindowStateService
             State = (int)state
         };
 
-        _cache[key] = data;
-
-        try
-        {
-            Directory.CreateDirectory(_stateFolder);
-            var path = GetPath(key);
-            var json = JsonSerializer.Serialize(data);
-            File.WriteAllText(path, json);
-        }
-        catch
-        {
-            // Best effort - don't crash on state persistence failure
-        }
+        _storage.Save(key, data);
     }
 
-    private WindowStateData? Load(string key)
+    private static string GetKey(Window window)
     {
-        if (_cache.TryGetValue(key, out var cached))
-            return cached;
-
-        var path = GetPath(key);
-        if (!File.Exists(path)) return null;
-
-        try
-        {
-            var json = File.ReadAllText(path);
-            var data = JsonSerializer.Deserialize<WindowStateData>(json);
-            if (data != null) _cache[key] = data;
-            return data;
-        }
-        catch
-        {
-            return null;
-        }
+        return window.GetType().FullName ?? window.GetType().Name;
     }
 
-    private string GetPath(string key)
+    private static bool IsVisibleOnAnyMonitor(WindowPositionData data)
     {
-        var safeKey = string.Join("_", key.Split(Path.GetInvalidFileNameChars()));
-        return Path.Combine(_stateFolder, $"{safeKey}.json");
-    }
+        var rect = new NativeMethods.RECT
+        {
+            Left = (int)data.Left,
+            Top = (int)data.Top,
+            Right = (int)(data.Left + data.Width),
+            Bottom = (int)(data.Top + data.Height)
+        };
 
-    private class WindowStateData
-    {
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public int State { get; set; }
+        return NativeMethods.MonitorFromRect(ref rect, NativeMethods.MONITOR_DEFAULTTONULL) != IntPtr.Zero;
     }
 }
