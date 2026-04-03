@@ -14,15 +14,17 @@ namespace Fenestra.Wpf.Services;
 internal sealed class TrayIconService : TrayIconServiceBase
 {
     private HwndSource? _hwndSource;
+    private readonly string _appId;
 
-    public TrayIconService()
+    public TrayIconService(AppInfo appInfo)
     {
         MenuStyle = CreateDefaultMenuStyle();
+        _appId = appInfo.AppId;
     }
 
     protected override IntPtr CreateWindowHandle()
     {
-        var parameters = new HwndSourceParameters("FenestraTrayIcon")
+        var parameters = new HwndSourceParameters(_appId)
         {
             Width = 0,
             Height = 0,
