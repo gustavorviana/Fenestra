@@ -1,12 +1,28 @@
 namespace Fenestra.Core.Models;
 
+/// <summary>
+/// Represents a file extension filter for file dialogs.
+/// </summary>
 public readonly struct FileExtensionInfo : IEquatable<FileExtensionInfo>
 {
+    /// <summary>
+    /// Gets a filter that matches all files.
+    /// </summary>
     public static FileExtensionInfo All => new("*", "All Files");
 
+    /// <summary>
+    /// Gets the file extension pattern (e.g. "txt" or "*").
+    /// </summary>
     public string Extension { get; }
+
+    /// <summary>
+    /// Gets the human-readable description for this extension filter.
+    /// </summary>
     public string Description { get; }
 
+    /// <summary>
+    /// Initializes a new instance with the specified extension and description.
+    /// </summary>
     public FileExtensionInfo(string extension, string description)
     {
         Extension = extension;

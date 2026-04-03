@@ -6,5 +6,8 @@ namespace Fenestra.Core;
 /// </summary>
 public interface ITaskbarProvider
 {
+    /// <summary>
+    /// Creates a taskbar progress indicator for the specified window.
+    /// </summary>
     ITaskbarProgress Create(object window);
 }

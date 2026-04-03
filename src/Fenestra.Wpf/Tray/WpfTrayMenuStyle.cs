@@ -8,6 +8,9 @@ using System.Windows.Media;
 
 namespace Fenestra.Wpf.Tray;
 
+/// <summary>
+/// WPF implementation of tray menu styling with custom templates and hover highlights.
+/// </summary>
 public class WpfTrayMenuStyle : TrayMenuStyle
 {
     protected override void OnApplyTheme(object menu, TrayMenuColors colors, double cornerRadius)

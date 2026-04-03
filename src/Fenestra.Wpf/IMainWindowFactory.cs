@@ -8,5 +8,8 @@ namespace Fenestra.Wpf;
 /// </summary>
 public interface IMainWindowFactory
 {
+    /// <summary>
+    /// Creates the main window, or returns null to shut down without UI.
+    /// </summary>
     Window? Create();
 }

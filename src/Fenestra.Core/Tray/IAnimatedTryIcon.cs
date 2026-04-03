@@ -1,7 +1,13 @@
 ﻿namespace Fenestra.Core.Tray;
 
+/// <summary>
+/// Animated tray icon that cycles through frames.
+/// </summary>
 public interface IAnimatedTryIcon : ITrayIcon
 {
+    /// <summary>
+    /// Raised when the current animation frame changes.
+    /// </summary>
     event EventHandler OnIconChanged;
 
     /// <summary>

@@ -11,6 +11,9 @@ using System.Windows.Media.Imaging;
 
 namespace Fenestra.Wpf.Tray;
 
+/// <summary>
+/// WPF implementation of badge overlay rendering for the tray icon.
+/// </summary>
 public class NotifyBadgeOverlay : NotifyBadgeOverlayBase
 {
     private SafeIconHandle? _badgedIconHandle;

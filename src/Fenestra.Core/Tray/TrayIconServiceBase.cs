@@ -44,6 +44,7 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     #endregion
 
     #region Properties
+    /// <inheritdoc />
     public TrayMenuStyle? MenuStyle { get; set; }
 
     protected IntPtr WindowHandle => _hwnd;
@@ -52,24 +53,30 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     protected abstract TrayMenuStyle CreateDefaultMenuStyle();
     #endregion
 
+    /// <inheritdoc />
     public event EventHandler? Click;
+    /// <inheritdoc />
     public event EventHandler? DoubleClick;
+    /// <inheritdoc />
     public event EventHandler? BalloonTipClicked;
 
     protected void RaiseClick() => Click?.Invoke(this, EventArgs.Empty);
     protected void RaiseDoubleClick() => DoubleClick?.Invoke(this, EventArgs.Empty);
     protected void RaiseBalloonTipClicked() => BalloonTipClicked?.Invoke(this, EventArgs.Empty);
 
+    /// <inheritdoc />
     public void Show()
     {
         UpdateIcon(true);
     }
 
+    /// <inheritdoc />
     public void Hide()
     {
         UpdateIcon(false);
     }
 
+    /// <inheritdoc />
     public void SetOverlay(ITrayIconOverlay overlay)
     {
         if (_overlay != null)
@@ -85,6 +92,7 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         ApplyIconToTray(_icon.Handle.DangerousGetHandle());
     }
 
+    /// <inheritdoc />
     public void SetIcon(ITrayIcon icon)
     {
         DisposeIcon();
@@ -106,6 +114,7 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         ApplyIconToTray(_icon.Handle.DangerousGetHandle());
     }
 
+    /// <inheritdoc />
     public void SetTooltip(string text)
     {
         _tooltip = text.Length > 127 ? text.Substring(0, 127) : text;
@@ -115,6 +124,7 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
             UpdateIcon(showIconInTray: true);
     }
 
+    /// <inheritdoc />
     public void ShowBalloonTip(string title, string text, TrayBalloonIcon icon = TrayBalloonIcon.None, int timeoutMs = 5000)
     {
         if (!_visible) Show();
@@ -141,6 +151,7 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_MODIFY, ref data);
     }
 
+    /// <inheritdoc />
     public void SetContextMenu(IEnumerable<TrayMenuItem> items)
     {
         if (items == null) throw new ArgumentNullException(nameof(items));

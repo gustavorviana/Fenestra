@@ -5,6 +5,9 @@ using Fenestra.Core.Models;
 
 namespace Fenestra.Wpf.Extensions;
 
+/// <summary>
+/// Extension methods for IDialogService.
+/// </summary>
 public static class DialogServiceExtensions
 {
     /// <summary>

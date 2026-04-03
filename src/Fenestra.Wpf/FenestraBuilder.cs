@@ -12,6 +12,9 @@ using System.Windows;
 
 namespace Fenestra.Wpf;
 
+/// <summary>
+/// Fluent builder for configuring and launching a Fenestra WPF application.
+/// </summary>
 public class FenestraBuilder
 {
     private AppInfo? _appInfo;

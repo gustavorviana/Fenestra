@@ -1,5 +1,8 @@
 namespace Fenestra.Core.Models;
 
+/// <summary>
+/// Startup approval status as stored in the Windows StartupApproved registry.
+/// </summary>
 public enum StartupType : uint
 {
     Enabled = 2,

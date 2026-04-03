@@ -3,10 +3,16 @@ using System.Runtime.InteropServices;
 
 namespace Fenestra.Core.Tray;
 
+/// <summary>
+/// Tray icon created from a static image stream.
+/// </summary>
 public class StaticTrayIcon : TrayIconBase
 {
     private readonly MemoryStream _stream;
 
+    /// <summary>
+    /// Initializes a new static tray icon from the specified image stream.
+    /// </summary>
     public StaticTrayIcon(MemoryStream stream)
     {
         if (!stream.CanRead || !stream.CanSeek)
@@ -15,6 +21,7 @@ public class StaticTrayIcon : TrayIconBase
         _stream = stream;
     }
 
+    /// <inheritdoc />
     public override void Initialize()
     {
         var raw = NativeMethods.CreateIconFromResourceEx(

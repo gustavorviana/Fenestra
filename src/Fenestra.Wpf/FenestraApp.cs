@@ -33,23 +33,40 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
     private IHost? _host;
     private readonly CancellationTokenSource _cts = new();
 
-    // IHost
+    /// <summary>
+    /// Gets the dependency injection service provider for this application.
+    /// </summary>
     public IServiceProvider Services => _host!.Services;
 
+    /// <summary>
+    /// Starts the hosted services.
+    /// </summary>
     public Task StartAsync(CancellationToken cancellationToken = default)
         => _host!.StartAsync(cancellationToken);
 
+    /// <summary>
+    /// Stops the hosted services.
+    /// </summary>
     public Task StopAsync(CancellationToken cancellationToken = default)
         => _host!.StopAsync(cancellationToken);
 
+    /// <summary>
+    /// Disposes the underlying host and cancellation token source.
+    /// </summary>
     public void Dispose()
     {
         _host?.Dispose();
         _cts.Dispose();
     }
 
-    // IWpfApplication
+    /// <summary>
+    /// Gets the application metadata (name, version, machine).
+    /// </summary>
     public AppInfo AppInfo { get; private set; } = null!;
+
+    /// <summary>
+    /// Gets a cancellation token that is signaled when the application shuts down.
+    /// </summary>
     public CancellationToken ApplicationToken => _cts.Token;
 
     void IWpfApplication.Shutdown(int exitCode)
@@ -68,6 +85,9 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
     /// </summary>
     protected abstract Window CreateMainWindow(IServiceProvider services);
 
+    /// <summary>
+    /// Initializes the host, registers services, and shows the main window on startup.
+    /// </summary>
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -131,6 +151,9 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         return CreateMainWindow(Services);
     }
 
+    /// <summary>
+    /// Stops the host and disposes resources when the application exits.
+    /// </summary>
     protected override void OnExit(ExitEventArgs e)
     {
         _cts.Cancel();

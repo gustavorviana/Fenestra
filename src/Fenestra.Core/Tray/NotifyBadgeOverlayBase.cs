@@ -2,20 +2,30 @@
 
 namespace Fenestra.Core.Tray
 {
+    /// <summary>
+    /// Base class for badge overlays that display a count or dot on the tray icon.
+    /// </summary>
     public abstract class NotifyBadgeOverlayBase : FenestraComponent, INotifyBadge, ITrayIconOverlay
     {
+        /// <summary>
+        /// Raised when the badge state changes and the icon needs to be re-rendered.
+        /// </summary>
         public event EventHandler OnUpdate = delegate { };
         private int _quantity = 0;
 
         private FenestralColor _background;
         private FenestralColor _foreground;
 
+        /// <summary>
+        /// Initializes the badge overlay with optional custom background and foreground colors.
+        /// </summary>
         public NotifyBadgeOverlayBase(FenestralColor? background = null, FenestralColor? foreground = null)
         {
             _background = background ?? FenestralColor.FromHex("#FF0000");
             _foreground = foreground ?? FenestralColor.FromHex("#FFFFFF");
         }
 
+        /// <inheritdoc />
         public int Quantity
         {
             get => _quantity;
@@ -32,8 +42,10 @@ namespace Fenestra.Core.Tray
             }
         }
 
+        /// <inheritdoc />
         public bool IsDot => _quantity == -1;
 
+        /// <inheritdoc />
         public FenestralColor Background
         {
             get => _background;
@@ -47,6 +59,7 @@ namespace Fenestra.Core.Tray
             }
         }
 
+        /// <inheritdoc />
         public FenestralColor Foreground
         {
             get => _foreground; set
@@ -59,12 +72,14 @@ namespace Fenestra.Core.Tray
             }
         }
 
+        /// <inheritdoc />
         public void Clear()
         {
             _quantity = 0;
             SignalUpdated();
         }
 
+        /// <inheritdoc />
         public void SetDot()
         {
             _quantity = -1;

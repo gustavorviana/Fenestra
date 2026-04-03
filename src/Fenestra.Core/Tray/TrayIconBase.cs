@@ -2,6 +2,9 @@
 
 namespace Fenestra.Core.Tray;
 
+/// <summary>
+/// Base class for tray icon implementations with standard dispose pattern.
+/// </summary>
 public abstract class TrayIconBase : FenestraComponent, ITrayIcon
 {
     private SafeIconHandle? _handle;
@@ -17,5 +20,6 @@ public abstract class TrayIconBase : FenestraComponent, ITrayIcon
         _handle = handle;
     }
 
+    /// <inheritdoc />
     public abstract void Initialize();
 }

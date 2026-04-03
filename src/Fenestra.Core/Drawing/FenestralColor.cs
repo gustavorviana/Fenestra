@@ -2,14 +2,34 @@
 
 namespace Fenestra.Core.Drawing
 {
+    /// <summary>
+    /// Platform-agnostic RGB color representation with hex string support.
+    /// </summary>
     public readonly struct FenestralColor : IEquatable<FenestralColor>
     {
+        /// <summary>
+        /// Gets the red channel value (0-255).
+        /// </summary>
         public byte R { get; }
+
+        /// <summary>
+        /// Gets the green channel value (0-255).
+        /// </summary>
         public byte G { get; }
+
+        /// <summary>
+        /// Gets the blue channel value (0-255).
+        /// </summary>
         public byte B { get; }
 
+        /// <summary>
+        /// Gets the color as a hex string in #RRGGBB format.
+        /// </summary>
         public string Hex => string.Format("#{0:X2}{1:X2}{2:X2}", R, G, B);
 
+        /// <summary>
+        /// Initializes a new color from individual red, green, and blue channel values.
+        /// </summary>
         public FenestralColor(byte r, byte g, byte b)
         {
             R = r;
@@ -29,11 +49,17 @@ namespace Fenestra.Core.Drawing
             B = byte.Parse(normalized.Substring(5, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture);
         }
 
+        /// <summary>
+        /// Creates a color from individual red, green, and blue channel values.
+        /// </summary>
         public static FenestralColor FromRgb(byte r, byte g, byte b)
         {
             return new FenestralColor(r, g, b);
         }
 
+        /// <summary>
+        /// Creates a color from a hex string (e.g. "#FF0000" or "F00").
+        /// </summary>
         public static FenestralColor FromHex(string hex)
         {
             return new FenestralColor(hex);

@@ -3,13 +3,34 @@ using Fenestra.Core.Models;
 
 namespace Fenestra.Core.Tray;
 
+/// <summary>
+/// Abstract base for tray context menu styling. Resolves theme colors and delegates platform-specific rendering to subclasses.
+/// </summary>
 public abstract class TrayMenuStyle
 {
+    /// <summary>
+    /// Gets or sets the custom background color, or null to use theme defaults.
+    /// </summary>
     public FenestralColor? Background { get; set; }
+
+    /// <summary>
+    /// Gets or sets the custom foreground (text) color, or null to use theme defaults.
+    /// </summary>
     public FenestralColor? Foreground { get; set; }
+
+    /// <summary>
+    /// Gets or sets the corner radius for the context menu.
+    /// </summary>
     public double CornerRadius { get; set; }
+
+    /// <summary>
+    /// Gets or sets the theme mode (dark, light, or system).
+    /// </summary>
     public TrayMenuTheme Theme { get; set; }
 
+    /// <summary>
+    /// Resolves the theme colors and applies them to the menu if a custom theme is configured.
+    /// </summary>
     public void ApplyTheme(object menu, bool isSystemDarkMode)
     {
         var colors = Resolve(isSystemDarkMode);
@@ -19,10 +40,16 @@ public abstract class TrayMenuStyle
             OnApplyTheme(menu, colors, CornerRadius);
     }
 
+    /// <summary>
+    /// Applies the resolved theme colors and corner radius to a platform-specific menu.
+    /// </summary>
     protected virtual void OnApplyTheme(object menu, TrayMenuColors colors, double cornerRadius)
     {
     }
 
+    /// <summary>
+    /// Resolves the final menu colors based on the current theme and system dark mode state.
+    /// </summary>
     public TrayMenuColors Resolve(bool isSystemDarkMode)
     {
         if (Background != null)

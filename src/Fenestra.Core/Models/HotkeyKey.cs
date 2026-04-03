@@ -1,5 +1,8 @@
 namespace Fenestra.Core.Models;
 
+/// <summary>
+/// Virtual key codes for use with global hotkey registration.
+/// </summary>
 public enum HotkeyKey
 {
     A = 0x41, B, C, D, E, F, G, H, I, J, K, L, M,

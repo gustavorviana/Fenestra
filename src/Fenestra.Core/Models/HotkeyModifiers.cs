@@ -1,5 +1,8 @@
 namespace Fenestra.Core.Models;
 
+/// <summary>
+/// Modifier keys for global hotkey combinations.
+/// </summary>
 [Flags]
 public enum HotkeyModifiers : uint
 {

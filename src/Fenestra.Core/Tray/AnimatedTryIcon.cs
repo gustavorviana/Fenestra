@@ -2,6 +2,9 @@ using Fenestra.Core.Native;
 
 namespace Fenestra.Core.Tray;
 
+/// <summary>
+/// Tray icon that cycles through a sequence of frames to create animation.
+/// </summary>
 public class AnimatedTryIcon : TrayIconBase, IAnimatedTryIcon
 {
     private readonly IReadOnlyList<ITrayIcon> _icons;
@@ -23,8 +26,12 @@ public class AnimatedTryIcon : TrayIconBase, IAnimatedTryIcon
         OnIconChanged(this, EventArgs.Empty);
     }
 
+    /// <inheritdoc />
     public bool IsAnimating => _timer != null;
 
+    /// <summary>
+    /// Initializes a new animated tray icon with the specified frames and animation interval.
+    /// </summary>
     public AnimatedTryIcon(IEnumerable<ITrayIcon> icons, int intervalMs = 500)
     {
         if (icons == null) throw new ArgumentNullException(nameof(icons));
@@ -37,6 +44,7 @@ public class AnimatedTryIcon : TrayIconBase, IAnimatedTryIcon
         _intervalMs = intervalMs;
     }
 
+    /// <inheritdoc />
     public override void Initialize()
     {
         foreach (var icon in _icons)
@@ -46,6 +54,7 @@ public class AnimatedTryIcon : TrayIconBase, IAnimatedTryIcon
             ApplyFrame(0);
     }
 
+    /// <inheritdoc />
     public void StartIconAnimation()
     {
         StopIconAnimation();
@@ -58,6 +67,7 @@ public class AnimatedTryIcon : TrayIconBase, IAnimatedTryIcon
         _timer = new Timer(OnTick, null, _intervalMs, _intervalMs);
     }
 
+    /// <inheritdoc />
     public void StopIconAnimation()
     {
         var timer = _timer;

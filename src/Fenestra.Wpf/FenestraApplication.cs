@@ -27,25 +27,45 @@ public class FenestraApplication : IHost, IWpfApplication
         _shellType = shellType;
     }
 
-    // IHost
+    /// <summary>
+    /// Gets the dependency injection service provider for this application.
+    /// </summary>
     public IServiceProvider Services => _host.Services;
 
+    /// <summary>
+    /// Starts the hosted services.
+    /// </summary>
     public Task StartAsync(CancellationToken cancellationToken = default)
         => _host.StartAsync(cancellationToken);
 
+    /// <summary>
+    /// Stops the hosted services.
+    /// </summary>
     public Task StopAsync(CancellationToken cancellationToken = default)
         => _host.StopAsync(cancellationToken);
 
+    /// <summary>
+    /// Disposes the underlying host and cancellation token source.
+    /// </summary>
     public void Dispose()
     {
         _host.Dispose();
         _cts.Dispose();
     }
 
-    // IWpfApplication
+    /// <summary>
+    /// Gets the application metadata (name, version, machine).
+    /// </summary>
     public AppInfo AppInfo { get; }
+
+    /// <summary>
+    /// Gets a cancellation token that is signaled when the application shuts down.
+    /// </summary>
     public CancellationToken ApplicationToken => _cts.Token;
 
+    /// <summary>
+    /// Shuts down the WPF application with the specified exit code.
+    /// </summary>
     public void Shutdown(int exitCode = 0)
     {
         Application.Current?.Dispatcher.Invoke(() =>
@@ -54,8 +74,6 @@ public class FenestraApplication : IHost, IWpfApplication
             Application.Current.Shutdown(exitCode);
         });
     }
-
-    // Static factories — Program.cs style
 
     /// <summary>
     /// Creates a builder.

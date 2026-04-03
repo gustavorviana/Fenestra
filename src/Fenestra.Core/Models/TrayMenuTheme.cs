@@ -1,5 +1,8 @@
 namespace Fenestra.Core.Models;
 
+/// <summary>
+/// Specifies the theme for the tray context menu.
+/// </summary>
 public enum TrayMenuTheme
 {
     /// <summary>
