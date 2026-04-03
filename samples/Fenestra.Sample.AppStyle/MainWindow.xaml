@@ -18,8 +18,7 @@
         <!-- Taskbar -->
         <GroupBox Header="Taskbar Progress" Margin="0,0,0,10">
             <StackPanel Margin="10">
-                <Button Content="Simulate Progress" Click="OnSimulateProgress" Margin="0,0,0,5" />
-                <Button Content="Clear" Click="OnClearProgress" />
+                <Button Content="Simulate Progress" Click="OnSimulateProgress" />
             </StackPanel>
         </GroupBox>
 

@@ -15,11 +15,11 @@ namespace Fenestra.Sample.AppStyle;
 public partial class MainWindow : Window, IMinimizeToTray
 {
     private readonly ITrayIconService _tray;
-    private readonly ITaskbarService _taskbar;
+    private readonly ITaskbarProvider _taskbar;
     private readonly AnimatedTryIcon _animatedIcon;
     private readonly NotifyBadgeOverlay _badge = new();
 
-    public MainWindow(ITrayIconService tray, ITaskbarService taskbar)
+    public MainWindow(ITrayIconService tray, ITaskbarProvider taskbar)
     {
         InitializeComponent();
         _tray = tray;
@@ -86,21 +86,17 @@ public partial class MainWindow : Window, IMinimizeToTray
 
     private async void OnSimulateProgress(object sender, RoutedEventArgs e)
     {
+        using var progress = _taskbar.Create(this);
+
         for (int i = 0; i <= 100; i += 5)
         {
-            _taskbar.SetProgress(i / 100.0);
+            progress.SetProgress(i / 100.0);
             StatusText.Text = $"Progress: {i}%";
             await Task.Delay(100);
         }
 
-        _taskbar.SetProgressState(TaskbarProgressState.Paused);
+        progress.SetState(TaskbarProgressState.Paused);
         StatusText.Text = "Done!";
-    }
-
-    private void OnClearProgress(object sender, RoutedEventArgs e)
-    {
-        _taskbar.ClearProgress();
-        StatusText.Text = "";
     }
 
     /// <summary>

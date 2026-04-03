@@ -210,7 +210,7 @@ public class FenestraBuilder
             services.AddSingleton<WindowStateService>();
             services.AddSingleton<IWindowManager, WindowManager>();
             services.AddSingleton<IDialogService, DialogService>();
-            services.AddSingleton<ITaskbarService, TaskbarService>();
+            services.AddSingleton<ITaskbarProvider, TaskbarProvider>();
             services.TryAddSingleton<IExceptionHandler, DefaultExceptionHandler>();
             services.AddSingleton<IWpfApplication>(_ => _wpfAppInstance!);
 

@@ -8,10 +8,11 @@ namespace Fenestra.Sample.BuilderStyle;
 public partial class MainWindow : Window, IMinimizeToTray
 {
     private readonly IDialogService _dialogs;
-    private readonly ITaskbarService _taskbar;
+    private readonly ITaskbarProvider _taskbar;
     private readonly ITrayIconService _tray;
+    private ITaskbarProgress? _progress;
 
-    public MainWindow(IDialogService dialogs, ITaskbarService taskbar, ITrayIconService tray)
+    public MainWindow(IDialogService dialogs, ITaskbarProvider taskbar, ITrayIconService tray)
     {
         InitializeComponent();
         _dialogs = dialogs;
@@ -54,29 +55,33 @@ public partial class MainWindow : Window, IMinimizeToTray
         _tray.ShowBalloonTip("Fenestra", "Hello from the system tray!", TrayBalloonIcon.Info);
     }
 
+    private ITaskbarProgress EnsureProgress() => _progress ??= _taskbar.Create(this);
+
     private void OnProgressChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        _taskbar.SetProgress(e.NewValue / 100.0);
+        EnsureProgress().SetProgress(e.NewValue / 100.0);
     }
 
     private void OnProgressNormal(object sender, RoutedEventArgs e)
     {
-        _taskbar.SetProgressState(TaskbarProgressState.Normal);
-        _taskbar.SetProgress(ProgressSlider.Value / 100.0);
+        var p = EnsureProgress();
+        p.SetState(TaskbarProgressState.Normal);
+        p.SetProgress(ProgressSlider.Value / 100.0);
     }
 
     private void OnProgressPaused(object sender, RoutedEventArgs e)
-        => _taskbar.SetProgressState(TaskbarProgressState.Paused);
+        => EnsureProgress().SetState(TaskbarProgressState.Paused);
 
     private void OnProgressError(object sender, RoutedEventArgs e)
-        => _taskbar.SetProgressState(TaskbarProgressState.Error);
+        => EnsureProgress().SetState(TaskbarProgressState.Error);
 
     private void OnProgressIndeterminate(object sender, RoutedEventArgs e)
-        => _taskbar.SetProgressState(TaskbarProgressState.Indeterminate);
+        => EnsureProgress().SetState(TaskbarProgressState.Indeterminate);
 
     private void OnProgressClear(object sender, RoutedEventArgs e)
     {
-        _taskbar.ClearProgress();
+        _progress?.Dispose();
+        _progress = null;
         ProgressSlider.Value = 0;
     }
 
