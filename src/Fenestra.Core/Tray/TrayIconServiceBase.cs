@@ -1,3 +1,4 @@
+using Fenestra.Core.Drawing;
 using Fenestra.Core.Models;
 using Fenestra.Core.Native;
 using System.Runtime.InteropServices;
@@ -30,8 +31,8 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     private bool _windowInitialized;
     private NativeMethods.NOTIFYICONDATA _nid;
     private SafeIconHandle? _iconHandle;
-    private ITrayIcon? _icon;
     private ITrayIconOverlay? _overlay;
+    private ITrayIcon? _icon;
 
     // State
     private bool _visible;
@@ -40,19 +41,13 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     #endregion
 
     #region Properties
-    public string? MenuBackground { get; set; }
+    public FenestralColor? MenuBackground { get; set; }
     public double MenuCornerRadius { get; set; }
     public TrayMenuTheme MenuTheme { get; set; }
-    public string BadgeBackground { get; set; } = "#FF0000";
-    public string BadgeForeground { get; set; } = "#FFFFFF";
 
     protected IntPtr WindowHandle => _hwnd;
     protected IReadOnlyList<TrayMenuItem>? MenuItems => _menuItems;
     #endregion
-
-    // ---------------------------------------------------------------------------
-    // Events
-    // ---------------------------------------------------------------------------
 
     public event EventHandler? Click;
     public event EventHandler? DoubleClick;
@@ -61,10 +56,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     protected void RaiseClick() => Click?.Invoke(this, EventArgs.Empty);
     protected void RaiseDoubleClick() => DoubleClick?.Invoke(this, EventArgs.Empty);
     protected void RaiseBalloonTipClicked() => BalloonTipClicked?.Invoke(this, EventArgs.Empty);
-
-    // ---------------------------------------------------------------------------
-    // ITrayIconService — visibility
-    // ---------------------------------------------------------------------------
 
     public void Show()
     {
@@ -91,10 +82,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         ApplyIconToTray(_icon.Handle.DangerousGetHandle());
     }
 
-    // ---------------------------------------------------------------------------
-    // ITrayIconService — icon
-    // ---------------------------------------------------------------------------
-
     public void SetIcon(ITrayIcon icon)
     {
         DisposeIcon();
@@ -116,10 +103,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         ApplyIconToTray(_icon.Handle.DangerousGetHandle());
     }
 
-    // ---------------------------------------------------------------------------
-    // ITrayIconService — tooltip
-    // ---------------------------------------------------------------------------
-
     public void SetTooltip(string text)
     {
         _tooltip = text.Length > 127 ? text.Substring(0, 127) : text;
@@ -128,10 +111,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         if (_visible)
             UpdateIcon(showIconInTray: true);
     }
-
-    // ---------------------------------------------------------------------------
-    // ITrayIconService — balloon tip
-    // ---------------------------------------------------------------------------
 
     public void ShowBalloonTip(string title, string text, TrayBalloonIcon icon = TrayBalloonIcon.None, int timeoutMs = 5000)
     {
@@ -159,19 +138,11 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_MODIFY, ref data);
     }
 
-    // ---------------------------------------------------------------------------
-    // ITrayIconService — context menu
-    // ---------------------------------------------------------------------------
-
     public void SetContextMenu(IEnumerable<TrayMenuItem> items)
     {
         if (items == null) throw new ArgumentNullException(nameof(items));
         _menuItems = items.ToList();
     }
-
-    // ---------------------------------------------------------------------------
-    // Abstract / virtual — implemented by platform subclass
-    // ---------------------------------------------------------------------------
 
     /// <summary>
     /// Creates the message window and returns its handle. Called once on first use.
@@ -182,13 +153,7 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     /// <summary>
     /// Shows a context menu for the tray icon. Called on right-click.
     /// </summary>
-    protected virtual void OnShowContextMenu()
-    {
-    }
-
-    // ---------------------------------------------------------------------------
-    // ProcessMessage — subclass calls from its WndProc
-    // ---------------------------------------------------------------------------
+    protected abstract void OnShowContextMenu();
 
     /// <summary>
     /// Processes a window message. The subclass should call this from its WndProc.
@@ -231,10 +196,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         return false;
     }
 
-    // ---------------------------------------------------------------------------
-    // Shell_NotifyIcon management
-    // ---------------------------------------------------------------------------
-
     private void UpdateIcon(bool showIconInTray)
     {
         _visible = showIconInTray;
@@ -275,10 +236,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
             NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_DELETE, ref data);
         }
     }
-
-    // ---------------------------------------------------------------------------
-    // Icon lifecycle
-    // ---------------------------------------------------------------------------
 
     private void EnsureIcon()
     {
@@ -322,10 +279,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         _nid.hIcon = IntPtr.Zero;
     }
 
-    // ---------------------------------------------------------------------------
-    // Window initialization
-    // ---------------------------------------------------------------------------
-
     private void EnsureWindow()
     {
         if (_windowInitialized) return;
@@ -347,10 +300,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
         EnsureIcon();
     }
 
-    // ---------------------------------------------------------------------------
-    // Badge / icon compositing
-    // ---------------------------------------------------------------------------
-
     /// <summary>
     /// Takes a base HICON, composites the overlay on top if set, and updates the tray.
     /// </summary>
@@ -370,10 +319,6 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
 
         if (_visible) UpdateIcon(showIconInTray: true);
     }
-
-    // ---------------------------------------------------------------------------
-    // Dispose
-    // ---------------------------------------------------------------------------
 
     protected override void Dispose(bool disposing)
     {

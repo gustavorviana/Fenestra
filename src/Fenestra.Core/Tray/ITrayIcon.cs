@@ -2,7 +2,7 @@
 
 namespace Fenestra.Core.Tray;
 
-public interface ITrayIcon : IDisposable
+public interface ITrayIcon : IFenestraComponent
 {
     SafeIconHandle? Handle { get; }
 

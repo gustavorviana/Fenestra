@@ -1,12 +1,14 @@
-﻿namespace Fenestra.Core.Tray;
+﻿using Fenestra.Core.Drawing;
+
+namespace Fenestra.Core.Tray;
 
 public interface INotifyBadge
 {
     int Quantity { get; set; }
     bool IsDot { get; }
 
-    string Background { get; set; }
-    string Foreground { get; set; }
+    FenestralColor Background { get; set; }
+    FenestralColor Foreground { get; set; }
 
     void SetDot();
 

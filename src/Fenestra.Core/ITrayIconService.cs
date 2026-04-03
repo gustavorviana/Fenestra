@@ -1,3 +1,4 @@
+using Fenestra.Core.Drawing;
 using Fenestra.Core.Models;
 using Fenestra.Core.Tray;
 
@@ -21,7 +22,7 @@ public interface ITrayIconService : IDisposable
     /// Background color for the context menu (hex string like "#FF0000" or named color).
     /// Overrides the theme background when set. Set to null to use the theme default.
     /// </summary>
-    string? MenuBackground { get; set; }
+    FenestralColor? MenuBackground { get; set; }
 
     /// <summary>
     /// Corner radius for the context menu. Set to 0 for sharp corners (default).
@@ -32,16 +33,6 @@ public interface ITrayIconService : IDisposable
     /// Theme for the context menu. When set to System, follows the Windows dark/light mode setting.
     /// </summary>
     TrayMenuTheme MenuTheme { get; set; }
-
-    /// <summary>
-    /// Background color for the badge (hex). Default: "#FF0000".
-    /// </summary>
-    string BadgeBackground { get; set; }
-
-    /// <summary>
-    /// Foreground color for the badge text (hex). Default: "#FFFFFF".
-    /// </summary>
-    string BadgeForeground { get; set; }
 
     // ---------------------------------------------------------------------------
     // Events

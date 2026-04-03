@@ -93,7 +93,7 @@ internal sealed class TrayIconService : TrayIconServiceBase
     {
         if (MenuBackground != null)
         {
-            background = WpfExtensions.ParseBrush(MenuBackground);
+            background = MenuBackground?.ToBrush();
             foreground = null;
             border = new SolidColorBrush(Color.FromRgb(0x66, 0x66, 0x66));
             separator = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
@@ -215,12 +215,12 @@ internal sealed class TrayIconService : TrayIconServiceBase
                 mi.Icon = CreateIcon(item.Icon);
 
             if (item.Foreground != null)
-                mi.Foreground = WpfExtensions.ParseBrush(item.Foreground);
+                mi.Foreground = item.Foreground?.ToBrush();
             else if (themeForeground != null)
                 mi.Foreground = themeForeground;
 
             if (item.Background != null)
-                mi.Background = WpfExtensions.ParseBrush(item.Background);
+                mi.Background = item.Background?.ToBrush();
 
             if (item.Children is { Count: > 0 })
             {

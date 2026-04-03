@@ -21,8 +21,8 @@ public class NotifyBadgeOverlay : NotifyBadgeOverlayBase
 
         const int size = 16;
 
-        var bgBrush = WpfExtensions.ParseBrush(Background);
-        var fgBrush = WpfExtensions.ParseBrush(Foreground);
+        var bgBrush = Background.ToBrush();
+        var fgBrush = Foreground.ToBrush();
 
         var baseBitmap = Imaging.CreateBitmapSourceFromHIcon(
             baseHIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());

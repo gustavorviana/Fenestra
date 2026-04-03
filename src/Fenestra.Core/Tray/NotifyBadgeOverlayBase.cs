@@ -1,17 +1,19 @@
-﻿namespace Fenestra.Core.Tray
+﻿using Fenestra.Core.Drawing;
+
+namespace Fenestra.Core.Tray
 {
     public abstract class NotifyBadgeOverlayBase : FenestraComponent, INotifyBadge, ITrayIconOverlay
     {
         public event EventHandler OnUpdate = delegate { };
         private int _quantity = 0;
 
-        private string _background;
-        private string _foreground;
+        private FenestralColor _background;
+        private FenestralColor _foreground;
 
-        public NotifyBadgeOverlayBase(string background = "#FF0000", string foreground = "#FFFFFF")
+        public NotifyBadgeOverlayBase(FenestralColor? background = null, FenestralColor? foreground = null)
         {
-            _background = background;
-            _foreground = foreground;
+            _background = background ?? FenestralColor.FromHex("#FF0000");
+            _foreground = foreground ?? FenestralColor.FromHex("#FFFFFF");
         }
 
         public int Quantity
@@ -32,7 +34,7 @@
 
         public bool IsDot => _quantity == -1;
 
-        public string Background
+        public FenestralColor Background
         {
             get => _background;
             set
@@ -45,7 +47,7 @@
             }
         }
 
-        public string Foreground
+        public FenestralColor Foreground
         {
             get => _foreground; set
             {

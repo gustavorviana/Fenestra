@@ -1,8 +1,10 @@
-﻿namespace Fenestra.Core.Tray;
+﻿namespace Fenestra.Core;
 
-public abstract class FenestraComponent : IDisposable
+public abstract class FenestraComponent : IFenestraComponent
 {
     private bool _disposed;
+
+    public bool Disposed => _disposed;
 
     protected virtual void Dispose(bool disposing)
     {

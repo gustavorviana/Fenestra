@@ -1,3 +1,5 @@
+using Fenestra.Core.Drawing;
+
 namespace Fenestra.Core.Models;
 
 public class TrayMenuItem
@@ -16,12 +18,12 @@ public class TrayMenuItem
     /// <summary>
     /// Text color as a hex string (e.g. "#FF0000") or named color (e.g. "Red").
     /// </summary>
-    public string? Foreground { get; set; }
+    public FenestralColor? Foreground { get; set; }
 
     /// <summary>
     /// Background color as a hex string (e.g. "#333333") or named color.
     /// </summary>
-    public string? Background { get; set; }
+    public FenestralColor? Background { get; set; }
 
     public static TrayMenuItem Separator() => new() { IsSeparator = true };
 
