@@ -1,13 +1,6 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
-using Fenestra.Core.Tray;
-using Fenestra.Wpf.Tray;
-using System.IO;
-using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Fenestra.Sample.AppStyle;
 
@@ -16,76 +9,33 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
     private readonly ITrayIconService _tray;
     private readonly ITaskbarProvider _taskbar;
     private readonly IDialogService _dialogs;
-    private readonly AnimatedTryIcon _animatedIcon;
-    private readonly NotifyBadgeOverlay _badge = new();
+    private readonly IEventBus _bus;
+    private readonly IAutoStartService _autoStart;
 
-    public MainWindow(ITrayIconService tray, ITaskbarProvider taskbar, IDialogService dialogs)
+    public MainWindow(
+        ITrayIconService tray,
+        ITaskbarProvider taskbar,
+        IDialogService dialogs,
+        IEventBus bus,
+        IAutoStartService autoStart)
     {
         InitializeComponent();
         _tray = tray;
         _taskbar = taskbar;
         _dialogs = dialogs;
-
-        _tray.SetTooltip("Fenestra App Style");
-        _tray.MenuStyle!.Theme = TrayMenuTheme.System;
-        _tray.MenuStyle!.CornerRadius = 6;
-
-        _animatedIcon = new AnimatedTryIcon(
-            CreateAnimationFrames().Select(ms => (ITrayIcon)new StaticTrayIcon(ms)),
-            intervalMs: 300);
-        _animatedIcon.Initialize();
-
-        _tray.Click += (_, _) => _dialogs.ShowMessage("Single click!", "Fenestra", FenestraMessageButton.OK, FenestraMessageIcon.Information);
-        _tray.DoubleClick += (_, _) => _dialogs.ShowMessage("Double click!", "Fenestra", FenestraMessageButton.OK, FenestraMessageIcon.Information);
-
-        _tray.SetOverlay(_badge);
-
-        var hIcon = LoadIcon(IntPtr.Zero, (IntPtr)32512);
-        var appIcon = Imaging.CreateBitmapSourceFromHIcon(hIcon, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-
-        _tray.SetContextMenu(new[]
-        {
-            new TrayMenuItem("Show Window", () => { Show(); WindowState = WindowState.Normal; Activate(); })
-                { Foreground = "#2196F3", Icon = appIcon },
-            new TrayMenuItem("Settings (disabled)", () => { })
-                { IsEnabled = false, Icon = appIcon, Foreground = "#757575" },
-            TrayMenuItem.Separator(),
-            new TrayMenuItem("Animation", () => { }) { Children = new[]
-            {
-                new TrayMenuItem("Start Animation", () => { _tray.SetIcon(_animatedIcon); _animatedIcon.StartIconAnimation(); }),
-                new TrayMenuItem("Stop Animation", () => _animatedIcon.StopIconAnimation()),
-            }},
-            new TrayMenuItem("Badge", () => { }) { Children = new[]
-            {
-                new TrayMenuItem("Set Badge 3", () => _badge.Quantity = 3),
-                new TrayMenuItem("Set Badge 9+", () => _badge.Quantity = 150),
-                new TrayMenuItem("Set Badge Dot", () => _badge.SetDot()),
-                new TrayMenuItem("Clear Badge", () => _badge.Clear()),
-            }},
-            new TrayMenuItem("Theme", () => { }) { Children = new[]
-            {
-                new TrayMenuItem("System", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.System; }),
-                new TrayMenuItem("Dark", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.Dark; }),
-                new TrayMenuItem("Light", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.Light; }),
-                new TrayMenuItem("Blue", () => _tray.MenuStyle.Background = "#1E3A5F"),
-                new TrayMenuItem("Default", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.Default; }),
-            }},
-            TrayMenuItem.Separator(),
-            new TrayMenuItem("Exit", () => Application.Current.Shutdown())
-                { Foreground = "#F44336" }
-        });
+        _bus = bus;
+        _autoStart = autoStart;
     }
 
     private void OnShowTray(object sender, RoutedEventArgs e)
     {
         _tray.Show();
-        StatusText.Text = "Tray icon visible - double-click to restore";
+        SetStatus("Tray icon visible");
     }
 
     private void OnShowBalloon(object sender, RoutedEventArgs e)
     {
-        _tray.Show();
-        _tray.ShowBalloonTip("App Style", "Notification from FenestraApp!", TrayBalloonIcon.Info);
+        _bus.PublishAsync(new BalloonRequestEvent("Fenestra", "Hello from the sample app!"));
     }
 
     private async void OnSimulateProgress(object sender, RoutedEventArgs e)
@@ -95,54 +45,50 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
         for (int i = 0; i <= 100; i += 5)
         {
             progress.SetProgress(i / 100.0);
-            StatusText.Text = $"Progress: {i}%";
+            SetStatus($"Progress: {i}%");
             await Task.Delay(100);
         }
 
         progress.SetState(TaskbarProgressState.Paused);
-        StatusText.Text = "Done!";
+        SetStatus("Progress complete");
     }
 
-    /// <summary>
-    /// Generates 4 animation frames: colored circles rotating through red, green, blue, yellow.
-    /// Each frame is a valid PNG stream that CreateIconFromResourceEx accepts on Vista+.
-    /// </summary>
-    private static List<MemoryStream> CreateAnimationFrames()
+    private void OnOpenFile(object sender, RoutedEventArgs e)
     {
-        var colors = new[]
+        var result = _dialogs.OpenFileDialog(new OpenFileDialogOptions
         {
-            Color.FromRgb(0xF4, 0x43, 0x36), // red
-            Color.FromRgb(0x4C, 0xAF, 0x50), // green
-            Color.FromRgb(0x21, 0x96, 0xF3), // blue
-            Color.FromRgb(0xFF, 0xC1, 0x07), // yellow
-        };
-
-        var frames = new List<MemoryStream>();
-        foreach (var color in colors)
-        {
-            var visual = new DrawingVisual();
-            using (var dc = visual.RenderOpen())
-            {
-                // Filled circle with a white border
-                var brush = new SolidColorBrush(color);
-                var pen = new Pen(Brushes.White, 1.5);
-                dc.DrawEllipse(brush, pen, new Point(8, 8), 7, 7);
-            }
-
-            var rtb = new RenderTargetBitmap(16, 16, 96, 96, PixelFormats.Pbgra32);
-            rtb.Render(visual);
-
-            var ms = new MemoryStream();
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(rtb));
-            encoder.Save(ms);
-            ms.Position = 0;
-            frames.Add(ms);
-        }
-
-        return frames;
+            Title = "Select a file",
+            Extensions = [new FileExtensionInfo("txt", "Text Files"), new FileExtensionInfo("*", "All Files")]
+        });
+        SetStatus(result != null ? $"Opened: {result}" : "Cancelled");
     }
 
-    [DllImport("user32.dll")]
-    private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
+    private void OnSaveFile(object sender, RoutedEventArgs e)
+    {
+        var result = _dialogs.SaveFileDialog(new SaveFileDialogOptions
+        {
+            Title = "Save file",
+            DefaultExtension = "txt",
+            FileName = "document",
+            Extensions = [new FileExtensionInfo("txt", "Text Files"), new FileExtensionInfo("*", "All Files")]
+        });
+        SetStatus(result != null ? $"Save to: {result}" : "Cancelled");
+    }
+
+    private void OnShowMessage(object sender, RoutedEventArgs e)
+    {
+        var result = _dialogs.ShowMessage(
+            "This is a sample message from Fenestra!",
+            "Fenestra Sample",
+            FenestraMessageButton.YesNo,
+            FenestraMessageIcon.Question);
+        SetStatus($"Message result: {result}");
+    }
+
+    private void OnCheckAutoStart(object sender, RoutedEventArgs e)
+    {
+        SetStatus($"Auto-start — Enabled: {_autoStart.IsEnabled}, Initialized: {_autoStart.IsInitialized()}");
+    }
+
+    private void SetStatus(string text) => StatusText.Text = text;
 }

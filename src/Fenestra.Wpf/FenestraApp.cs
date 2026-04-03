@@ -86,6 +86,14 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
     protected abstract Window CreateMainWindow(IServiceProvider services);
 
     /// <summary>
+    /// Called after all services are initialized and the main window is created, but before it is shown.
+    /// Use this to configure tray menus, hotkeys, event subscriptions, etc.
+    /// </summary>
+    protected virtual void OnReady(IServiceProvider services, Window mainWindow)
+    {
+    }
+
+    /// <summary>
     /// Initializes the host, registers services, and shows the main window on startup.
     /// </summary>
     protected override void OnStartup(StartupEventArgs e)
@@ -136,6 +144,8 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
             minimizeToTray.Attach(mainWindow);
         }
+
+        OnReady(Services, mainWindow);
 
         mainWindow.Show();
     }
