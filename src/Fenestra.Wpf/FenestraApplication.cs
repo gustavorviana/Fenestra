@@ -147,11 +147,22 @@ public class FenestraApplication : IHost, IWpfApplication
 
     private void RunCore()
     {
+        var singleInstance = Services.GetService(typeof(Services.SingleInstanceGuard)) as Services.SingleInstanceGuard;
+        if (singleInstance != null && !singleInstance.IsFirstInstance)
+        {
+            singleInstance.SendArguments(Environment.GetCommandLineArgs().Skip(1).ToArray());
+            singleInstance.Dispose();
+            Dispose();
+            return;
+        }
+
         var wpfApp = CreateWpfApplication();
 
         RegisterExceptionHandlers(wpfApp);
 
         StartAsync().GetAwaiter().GetResult();
+
+        singleInstance?.StartListening();
 
         var shell = ResolveMainWindow();
 

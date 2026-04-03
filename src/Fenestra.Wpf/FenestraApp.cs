@@ -80,8 +80,19 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         _host = builder.BuildHost(shellType: null);
         AppInfo = _host.Services.GetRequiredService<AppInfo>();
 
+        var singleInstance = Services.GetService<Services.SingleInstanceGuard>();
+        if (singleInstance != null && !singleInstance.IsFirstInstance)
+        {
+            singleInstance.SendArguments(e.Args);
+            singleInstance.Dispose();
+            Shutdown(0);
+            return;
+        }
+
         RegisterExceptionHandlers();
         StartAsync().GetAwaiter().GetResult();
+
+        singleInstance?.StartListening();
 
         var mainWindow = ResolveMainWindow();
         if (mainWindow is null)

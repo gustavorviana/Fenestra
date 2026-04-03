@@ -145,6 +145,34 @@ public class FenestraBuilder
     }
 
     /// <summary>
+    /// Enables single instance mode. Only one instance of the application can run at a time.
+    /// Arguments from subsequent launches are forwarded to the running instance via <see cref="ISingleInstanceApp"/>.
+    /// </summary>
+    public FenestraBuilder UseSingleInstance()
+    {
+        Services.AddSingleton<SingleInstanceGuard>();
+        return this;
+    }
+
+    /// <summary>
+    /// Enables the auto-start service for managing Windows startup registration via <see cref="IAutoStartService"/>.
+    /// </summary>
+    public FenestraBuilder UseAutoStart()
+    {
+        Services.AddSingleton<IAutoStartService, AutoStartService>();
+        return this;
+    }
+
+    /// <summary>
+    /// Enables global hotkey registration via <see cref="IGlobalHotkeyService"/>.
+    /// </summary>
+    public FenestraBuilder UseGlobalHotkeys()
+    {
+        Services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
+        return this;
+    }
+
+    /// <summary>
     /// Uses a custom <see cref="IWindowPositionStorage"/> implementation.
     /// </summary>
     public FenestraBuilder UseWindowPositionStorage<T>() where T : class, IWindowPositionStorage
