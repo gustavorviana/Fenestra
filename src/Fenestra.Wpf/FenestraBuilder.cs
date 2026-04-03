@@ -158,6 +158,15 @@ public class FenestraBuilder
     }
 
     /// <summary>
+    /// Enables system theme detection. Monitors dark/light mode changes via <see cref="IThemeService"/>.
+    /// </summary>
+    public FenestraBuilder UseThemeDetection()
+    {
+        Services.AddSingleton<IThemeService, ThemeService>();
+        return this;
+    }
+
+    /// <summary>
     /// Enables the auto-start service for managing Windows startup registration via <see cref="IAutoStartService"/>.
     /// </summary>
     public FenestraBuilder UseAutoStart()

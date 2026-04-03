@@ -19,11 +19,11 @@ public class EventBus : IEventBus
         }
 
         foreach (var handler in snapshot)
-            await ((EventHandler<T>)handler)(message);
+            await ((BusHandler<T>)handler)(message);
     }
 
     /// <inheritdoc />
-    public IDisposable On<T>(EventHandler<T> handler) where T : notnull
+    public IDisposable On<T>(BusHandler<T> handler) where T : notnull
     {
         lock (_lock)
         {

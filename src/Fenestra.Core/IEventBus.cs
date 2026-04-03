@@ -3,7 +3,7 @@ namespace Fenestra.Core;
 /// <summary>
 /// Async event handler delegate for the event bus.
 /// </summary>
-public delegate Task EventHandler<in T>(T message);
+public delegate Task BusHandler<in T>(T message);
 
 /// <summary>
 /// Typed async pub/sub event bus. Publish events from one point and receive them in another without direct coupling.
@@ -18,5 +18,5 @@ public interface IEventBus
     /// <summary>
     /// Subscribes a handler for messages of the specified type; dispose the return value to unsubscribe.
     /// </summary>
-    IDisposable On<T>(EventHandler<T> handler) where T : notnull;
+    IDisposable On<T>(BusHandler<T> handler) where T : notnull;
 }

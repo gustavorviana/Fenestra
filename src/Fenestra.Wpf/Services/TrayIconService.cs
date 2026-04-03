@@ -1,3 +1,4 @@
+using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Core.Tray;
 using Fenestra.Wpf.Extensions;
@@ -15,11 +16,13 @@ internal sealed class TrayIconService : TrayIconServiceBase
 {
     private HwndSource? _hwndSource;
     private readonly string _appId;
+    private readonly IThemeService? _themeService;
 
-    public TrayIconService(AppInfo appInfo)
+    public TrayIconService(AppInfo appInfo, IServiceProvider services)
     {
         MenuStyle = CreateDefaultMenuStyle();
         _appId = appInfo.AppId;
+        _themeService = services.GetService(typeof(IThemeService)) as IThemeService;
     }
 
     protected override IntPtr CreateWindowHandle()
@@ -55,8 +58,8 @@ internal sealed class TrayIconService : TrayIconServiceBase
 
         if (MenuStyle != null)
         {
-            MenuStyle.ApplyTheme(menu, IsWindowsDarkMode());
-            var colors = MenuStyle.Resolve(IsWindowsDarkMode());
+            MenuStyle.ApplyTheme(menu, GetIsDarkMode());
+            var colors = MenuStyle.Resolve(GetIsDarkMode());
             fg = colors.Foreground?.ToBrush();
             bg = colors.Background?.ToBrush();
         }
@@ -81,8 +84,11 @@ internal sealed class TrayIconService : TrayIconServiceBase
         base.Dispose(disposing);
     }
 
-    private static bool IsWindowsDarkMode()
+    private bool GetIsDarkMode()
     {
+        if (_themeService != null)
+            return _themeService.IsDarkMode;
+
         try
         {
             using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(
@@ -90,10 +96,7 @@ internal sealed class TrayIconService : TrayIconServiceBase
             var value = key?.GetValue("AppsUseLightTheme");
             if (value is int i) return i == 0;
         }
-        catch
-        {
-            // Registry read failed — fall back to light.
-        }
+        catch { }
 
         return false;
     }

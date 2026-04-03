@@ -1,5 +1,6 @@
 using System.IO;
 using System.IO.Pipes;
+using System.Text;
 using System.Windows;
 using Fenestra.Core;
 using Fenestra.Core.Models;
@@ -29,7 +30,7 @@ internal class SingleInstanceGuard : IDisposable
         if (!IsFirstInstance) return;
 
         _cts = new CancellationTokenSource();
-        Task.Run(() => ListenForArguments(_cts.Token));
+        Task.Run(() => ListenLoop(_cts.Token));
     }
 
     public void SendArguments(string[] args)
@@ -39,19 +40,17 @@ internal class SingleInstanceGuard : IDisposable
             using var client = new NamedPipeClientStream(".", _pipeName, PipeDirection.Out);
             client.Connect(2000);
 
-            using var writer = new StreamWriter(client);
-            writer.WriteLine(args.Length.ToString());
-            foreach (var arg in args)
-                writer.WriteLine(arg);
-            writer.Flush();
+            var bytes = Encoding.UTF8.GetBytes(string.Join("\t", args));
+            client.Write(bytes, 0, bytes.Length);
+            client.Flush();
         }
         catch
         {
-            // Best effort — first instance may not be listening yet
+            // Best effort
         }
     }
 
-    private async Task ListenForArguments(CancellationToken token)
+    private async Task ListenLoop(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
@@ -60,15 +59,19 @@ internal class SingleInstanceGuard : IDisposable
                 using var server = new NamedPipeServerStream(_pipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
                 await server.WaitForConnectionAsync(token);
 
-                using var reader = new StreamReader(server);
-                var countLine = await reader.ReadLineAsync();
-                if (int.TryParse(countLine, out var count))
-                {
-                    var args = new string[count];
-                    for (int i = 0; i < count; i++)
-                        args[i] = await reader.ReadLineAsync() ?? string.Empty;
+                using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
 
+                try
+                {
+                    var data = await ReadAll(server, timeoutCts.Token);
+                    var raw = Encoding.UTF8.GetString(data);
+                    var args = string.IsNullOrWhiteSpace(raw) ? [] : raw.Split('\t');
                     DispatchArguments(args);
+                }
+                catch (OperationCanceledException) when (!token.IsCancellationRequested)
+                {
+                    // Client took too long — disconnect and accept next
                 }
             }
             catch (OperationCanceledException)
@@ -80,6 +83,22 @@ internal class SingleInstanceGuard : IDisposable
                 // Pipe error — retry
             }
         }
+    }
+
+    private static async Task<byte[]> ReadAll(Stream stream, CancellationToken token)
+    {
+        using var ms = new MemoryStream();
+        var buffer = new byte[1024];
+
+        while (true)
+        {
+            var readTask = stream.ReadAsync(buffer, 0, buffer.Length, token);
+            var read = await readTask;
+            if (read == 0) break;
+            ms.Write(buffer, 0, read);
+        }
+
+        return ms.ToArray();
     }
 
     private void DispatchArguments(string[] args)
