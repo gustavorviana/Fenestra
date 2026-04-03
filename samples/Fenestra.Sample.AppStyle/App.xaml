@@ -1,0 +1,7 @@
+<fenestra:FenestraApp x:Class="Fenestra.Sample.AppStyle.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:fenestra="clr-namespace:Fenestra.Wpf;assembly=Fenestra.Wpf">
+    <Application.Resources>
+    </Application.Resources>
+</fenestra:FenestraApp>

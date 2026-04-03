@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Fenestra.Core/Fenestra.Core.csproj" />
+    <Project Path="src/Fenestra.Wpf/Fenestra.Wpf.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Fenestra.Tests/Fenestra.Tests.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Fenestra.Sample.BuilderStyle/Fenestra.Sample.BuilderStyle.csproj" />
+    <Project Path="samples/Fenestra.Sample.AppStyle/Fenestra.Sample.AppStyle.csproj" />
+    <Project Path="samples/Fenestra.Sample.BuilderWithApp/Fenestra.Sample.BuilderWithApp.csproj" />
+  </Folder>
+</Solution>

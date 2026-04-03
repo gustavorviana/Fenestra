@@ -1,0 +1,12 @@
+<Window x:Class="Fenestra.Sample.BuilderWithApp.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Builder With App Sample" Height="450" Width="800">
+    <Grid>
+        <TextBlock Text="Fenestra - Builder Style with App.xaml"
+                   Foreground="{StaticResource PrimaryBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="24" />
+    </Grid>
+</Window>

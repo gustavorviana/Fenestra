@@ -1,0 +1,28 @@
+<Window x:Class="Fenestra.Sample.AppStyle.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="App Style Sample" Height="400" Width="500">
+    <StackPanel Margin="20" HorizontalAlignment="Center">
+        <TextBlock Text="Fenestra - App Style (App.xaml.cs)"
+                   HorizontalAlignment="Center"
+                   FontSize="20" Margin="0,0,0,20" />
+
+        <!-- Tray Icon -->
+        <GroupBox Header="System Tray" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <Button Content="Show Tray Icon" Click="OnShowTray" Margin="0,0,0,5" />
+                <Button Content="Show Balloon" Click="OnShowBalloon" />
+            </StackPanel>
+        </GroupBox>
+
+        <!-- Taskbar -->
+        <GroupBox Header="Taskbar Progress" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <Button Content="Simulate Progress" Click="OnSimulateProgress" Margin="0,0,0,5" />
+                <Button Content="Clear" Click="OnClearProgress" />
+            </StackPanel>
+        </GroupBox>
+
+        <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="Gray" />
+    </StackPanel>
+</Window>

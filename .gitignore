@@ -1,0 +1,40 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Visual Studio
+.vs/
+*.rsuser
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+## NuGet
+**/[Pp]ackages/*
+*.nupkg
+*.snupkg
+**/launchSettings.json
+
+## Build results
+[Dd]ebugPublic/
+[Rr]eleases/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+
+## Rider
+.idea/
+
+## macOS
+.DS_Store
