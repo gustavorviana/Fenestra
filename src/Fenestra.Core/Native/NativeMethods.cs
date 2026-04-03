@@ -92,6 +92,9 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     internal static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
 
+    [DllImport("user32.dll")]
+    internal static extern uint GetDoubleClickTime();
+
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern IntPtr CreateIconFromResourceEx(
         byte[] presbits, int dwResSize, bool fIcon, int dwVer, int cxDesired, int cyDesired, int flags);

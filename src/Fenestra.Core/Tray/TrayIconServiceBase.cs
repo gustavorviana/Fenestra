@@ -37,6 +37,10 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     private bool _visible;
     private string _tooltip = string.Empty;
     private List<TrayMenuItem>? _menuItems;
+
+    // Click debounce
+    private Timer? _clickTimer;
+    private bool _doubleClickFired;
     #endregion
 
     #region Properties
@@ -165,11 +169,26 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
             switch ((int)lParam)
             {
                 case WM_LBUTTONDBLCLK:
+                    _clickTimer?.Dispose();
+                    _clickTimer = null;
+                    _doubleClickFired = true;
                     RaiseDoubleClick();
                     break;
 
                 case WM_LBUTTONUP:
-                    RaiseClick();
+                    if (_doubleClickFired)
+                    {
+                        _doubleClickFired = false;
+                        break;
+                    }
+                    _clickTimer?.Dispose();
+                    var delay = (int)NativeMethods.GetDoubleClickTime();
+                    _clickTimer = new Timer(_ =>
+                    {
+                        _clickTimer?.Dispose();
+                        _clickTimer = null;
+                        RaiseClick();
+                    }, null, delay, Timeout.Infinite);
                     break;
 
                 case WM_RBUTTONUP:
@@ -323,6 +342,8 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     {
         base.Dispose(disposing);
 
+        _clickTimer?.Dispose();
+        _clickTimer = null;
         _visible = false;
         _overlay?.Dispose();
         UpdateIcon(showIconInTray: false);

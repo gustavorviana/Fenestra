@@ -16,14 +16,16 @@ public partial class MainWindow : Window, IMinimizeToTray
 {
     private readonly ITrayIconService _tray;
     private readonly ITaskbarProvider _taskbar;
+    private readonly IDialogService _dialogs;
     private readonly AnimatedTryIcon _animatedIcon;
     private readonly NotifyBadgeOverlay _badge = new();
 
-    public MainWindow(ITrayIconService tray, ITaskbarProvider taskbar)
+    public MainWindow(ITrayIconService tray, ITaskbarProvider taskbar, IDialogService dialogs)
     {
         InitializeComponent();
         _tray = tray;
         _taskbar = taskbar;
+        _dialogs = dialogs;
 
         _tray.SetTooltip("Fenestra App Style");
         _tray.MenuStyle!.Theme = TrayMenuTheme.System;
@@ -33,6 +35,9 @@ public partial class MainWindow : Window, IMinimizeToTray
             CreateAnimationFrames().Select(ms => (ITrayIcon)new StaticTrayIcon(ms)),
             intervalMs: 300);
         _animatedIcon.Initialize();
+
+        _tray.Click += (_, _) => _dialogs.ShowMessage("Single click!", "Fenestra", FenestraMessageButton.OK, FenestraMessageIcon.Information);
+        _tray.DoubleClick += (_, _) => _dialogs.ShowMessage("Double click!", "Fenestra", FenestraMessageButton.OK, FenestraMessageIcon.Information);
 
         _tray.SetOverlay(_badge);
 
