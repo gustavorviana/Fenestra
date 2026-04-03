@@ -20,7 +20,7 @@ public interface ITrayIconService : IDisposable
     /// <summary>
     /// Style settings for the context menu (theme, background, corner radius).
     /// </summary>
-    ITrayMenuStyle MenuStyle { get; }
+    TrayMenuStyle? MenuStyle { get; }
 
     event EventHandler? Click;
     event EventHandler? DoubleClick;

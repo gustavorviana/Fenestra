@@ -3,12 +3,25 @@ using Fenestra.Core.Models;
 
 namespace Fenestra.Core.Tray;
 
-public class TrayMenuStyle : ITrayMenuStyle
+public abstract class TrayMenuStyle
 {
     public FenestralColor? Background { get; set; }
     public FenestralColor? Foreground { get; set; }
     public double CornerRadius { get; set; }
     public TrayMenuTheme Theme { get; set; }
+
+    public void ApplyTheme(object menu, bool isSystemDarkMode)
+    {
+        var colors = Resolve(isSystemDarkMode);
+        var hasCustomTheme = colors.Background != null || CornerRadius > 0;
+
+        if (hasCustomTheme)
+            OnApplyTheme(menu, colors, CornerRadius);
+    }
+
+    protected virtual void OnApplyTheme(object menu, TrayMenuColors colors, double cornerRadius)
+    {
+    }
 
     public TrayMenuColors Resolve(bool isSystemDarkMode)
     {

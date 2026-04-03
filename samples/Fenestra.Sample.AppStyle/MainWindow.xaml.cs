@@ -26,8 +26,8 @@ public partial class MainWindow : Window, IMinimizeToTray
         _taskbar = taskbar;
 
         _tray.SetTooltip("Fenestra App Style");
-        _tray.MenuStyle.Theme = TrayMenuTheme.System;
-        _tray.MenuStyle.CornerRadius = 6;
+        _tray.MenuStyle!.Theme = TrayMenuTheme.System;
+        _tray.MenuStyle!.CornerRadius = 6;
 
         _animatedIcon = new AnimatedTryIcon(
             CreateAnimationFrames().Select(ms => (ITrayIcon)new StaticTrayIcon(ms)),

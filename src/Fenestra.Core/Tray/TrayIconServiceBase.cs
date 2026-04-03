@@ -40,11 +40,12 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     #endregion
 
     #region Properties
-    public TrayMenuStyle MenuStyle { get; } = new();
-    ITrayMenuStyle ITrayIconService.MenuStyle => MenuStyle;
+    public TrayMenuStyle? MenuStyle { get; set; }
 
     protected IntPtr WindowHandle => _hwnd;
     protected IReadOnlyList<TrayMenuItem>? MenuItems => _menuItems;
+
+    protected abstract TrayMenuStyle CreateDefaultMenuStyle();
     #endregion
 
     public event EventHandler? Click;

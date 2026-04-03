@@ -2,8 +2,8 @@ using Fenestra.Core.Models;
 using Fenestra.Core.Tray;
 using Fenestra.Wpf.Extensions;
 using Fenestra.Wpf.Native;
+using Fenestra.Wpf.Tray;
 using System.IO;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -14,6 +14,11 @@ namespace Fenestra.Wpf.Services;
 internal sealed class TrayIconService : TrayIconServiceBase
 {
     private HwndSource? _hwndSource;
+
+    public TrayIconService()
+    {
+        MenuStyle = CreateDefaultMenuStyle();
+    }
 
     protected override IntPtr CreateWindowHandle()
     {
@@ -36,23 +41,25 @@ internal sealed class TrayIconService : TrayIconServiceBase
         return IntPtr.Zero;
     }
 
+    protected override TrayMenuStyle CreateDefaultMenuStyle() => new WpfTrayMenuStyle();
+
     protected override void OnShowContextMenu()
     {
         if (MenuItems == null || MenuItems.Count == 0 || _hwndSource == null) return;
 
         var menu = new ContextMenu();
+        Brush? fg = null;
+        Brush? bg = null;
 
-        var colors = MenuStyle.Resolve(IsWindowsDarkMode());
-        var bg = colors.Background?.ToBrush();
-        var fg = colors.Foreground?.ToBrush();
-        var border = colors.Border?.ToBrush();
-        var separator = colors.Separator?.ToBrush();
+        if (MenuStyle != null)
+        {
+            MenuStyle.ApplyTheme(menu, IsWindowsDarkMode());
+            var colors = MenuStyle.Resolve(IsWindowsDarkMode());
+            fg = colors.Foreground?.ToBrush();
+            bg = colors.Background?.ToBrush();
+        }
 
-        bool hasCustomTheme = bg != null || MenuStyle.CornerRadius > 0;
-        if (hasCustomTheme)
-            ApplyMenuTheme(menu, bg ?? SystemColors.MenuBrush, fg, border, separator, MenuStyle.CornerRadius);
-
-        BuildMenu(menu.Items, MenuItems, fg, hasCustomTheme ? bg : null);
+        BuildMenu(menu.Items, MenuItems, fg, bg);
 
         menu.Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint;
 
@@ -89,43 +96,6 @@ internal sealed class TrayIconService : TrayIconServiceBase
         return false;
     }
 
-    private static void ApplyMenuTheme(ContextMenu menu, Brush background, Brush? foreground,
-        Brush? borderBrush, Brush? separatorBrush, double cornerRadius)
-    {
-        menu.Background = background;
-        menu.HasDropShadow = true;
-
-        var template = new ControlTemplate(typeof(ContextMenu));
-        var borderFactory = new FrameworkElementFactory(typeof(Border));
-        borderFactory.SetValue(Border.BackgroundProperty, background);
-        borderFactory.SetValue(Border.BorderBrushProperty, borderBrush ?? new SolidColorBrush(Color.FromRgb(0x66, 0x66, 0x66)));
-        borderFactory.SetValue(Border.BorderThicknessProperty, new Thickness(1));
-        borderFactory.SetValue(Border.PaddingProperty, new Thickness(4));
-        borderFactory.SetValue(Border.CornerRadiusProperty, new CornerRadius(cornerRadius));
-
-        var presenter = new FrameworkElementFactory(typeof(ItemsPresenter));
-        borderFactory.AppendChild(presenter);
-        template.VisualTree = borderFactory;
-        menu.Template = template;
-
-        menu.Resources[SystemColors.MenuBrushKey] = background;
-        if (foreground != null)
-            menu.Resources[SystemColors.MenuTextBrushKey] = foreground;
-
-        var menuItemStyle = new Style(typeof(MenuItem));
-        menuItemStyle.Setters.Add(new Setter(Control.BackgroundProperty, Brushes.Transparent));
-        menuItemStyle.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(0)));
-        if (foreground != null)
-            menuItemStyle.Setters.Add(new Setter(Control.ForegroundProperty, foreground));
-
-        var separatorStyle = new Style(typeof(Separator));
-        separatorStyle.Setters.Add(new Setter(Separator.BackgroundProperty, separatorBrush ?? new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88))));
-        separatorStyle.Setters.Add(new Setter(Separator.MarginProperty, new Thickness(4, 2, 4, 2)));
-
-        menu.Resources[typeof(MenuItem)] = menuItemStyle;
-        menu.Resources[typeof(Separator)] = separatorStyle;
-    }
-
     private static void BuildMenu(ItemCollection target, IReadOnlyList<TrayMenuItem> items,
         Brush? themeForeground = null, Brush? themeBackground = null)
     {
@@ -156,17 +126,6 @@ internal sealed class TrayIconService : TrayIconServiceBase
 
             if (item.Children is { Count: > 0 })
             {
-                if (themeBackground != null)
-                {
-                    var bg = themeBackground;
-                    var fg = themeForeground;
-                    mi.SubmenuOpened += (sender, _) =>
-                    {
-                        if (sender is MenuItem parent)
-                            StyleSubmenuPopup(parent, bg, fg);
-                    };
-                }
-
                 BuildMenu(mi.Items, item.Children, themeForeground, themeBackground);
             }
             else if (item.Action != null)
@@ -176,35 +135,6 @@ internal sealed class TrayIconService : TrayIconServiceBase
             }
 
             target.Add(mi);
-        }
-    }
-
-    private static void StyleSubmenuPopup(MenuItem parent, Brush background, Brush? foreground)
-    {
-        parent.UpdateLayout();
-
-        var popup = parent.Template?.FindName("PART_Popup", parent) as System.Windows.Controls.Primitives.Popup;
-        if (popup?.Child is FrameworkElement popupRoot)
-        {
-            ApplyBackgroundRecursive(popupRoot, background, foreground);
-        }
-    }
-
-    private static void ApplyBackgroundRecursive(DependencyObject element, Brush background, Brush? foreground)
-    {
-        if (element is Border border)
-        {
-            border.Background = background;
-        }
-        else if (element is Panel panel)
-        {
-            panel.Background = background;
-        }
-
-        int count = VisualTreeHelper.GetChildrenCount(element);
-        for (int i = 0; i < count; i++)
-        {
-            ApplyBackgroundRecursive(VisualTreeHelper.GetChild(element, i), background, foreground);
         }
     }
 
