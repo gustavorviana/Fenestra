@@ -6,6 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <AssemblyTitle>Fenestra Sample</AssemblyTitle>
+    <Product>Fenestra Sample</Product>
+    <Description>Sample application showcasing all Fenestra features</Description>
   </PropertyGroup>
 
   <ItemGroup>
