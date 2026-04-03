@@ -26,8 +26,8 @@ public partial class MainWindow : Window, IMinimizeToTray
         _taskbar = taskbar;
 
         _tray.SetTooltip("Fenestra App Style");
-        _tray.MenuTheme = TrayMenuTheme.System;
-        _tray.MenuCornerRadius = 6;
+        _tray.MenuStyle.Theme = TrayMenuTheme.System;
+        _tray.MenuStyle.CornerRadius = 6;
 
         _animatedIcon = new AnimatedTryIcon(
             CreateAnimationFrames().Select(ms => (ITrayIcon)new StaticTrayIcon(ms)),
@@ -60,11 +60,11 @@ public partial class MainWindow : Window, IMinimizeToTray
             }},
             new TrayMenuItem("Theme", () => { }) { Children = new[]
             {
-                new TrayMenuItem("System", () => { _tray.MenuBackground = null; _tray.MenuTheme = TrayMenuTheme.System; }),
-                new TrayMenuItem("Dark", () => { _tray.MenuBackground = null; _tray.MenuTheme = TrayMenuTheme.Dark; }),
-                new TrayMenuItem("Light", () => { _tray.MenuBackground = null; _tray.MenuTheme = TrayMenuTheme.Light; }),
-                new TrayMenuItem("Blue", () => _tray.MenuBackground = "#1E3A5F"),
-                new TrayMenuItem("Default", () => { _tray.MenuBackground = null; _tray.MenuTheme = TrayMenuTheme.Default; }),
+                new TrayMenuItem("System", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.System; }),
+                new TrayMenuItem("Dark", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.Dark; }),
+                new TrayMenuItem("Light", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.Light; }),
+                new TrayMenuItem("Blue", () => _tray.MenuStyle.Background = "#1E3A5F"),
+                new TrayMenuItem("Default", () => { _tray.MenuStyle.Background = null; _tray.MenuStyle.Theme = TrayMenuTheme.Default; }),
             }},
             TrayMenuItem.Separator(),
             new TrayMenuItem("Exit", () => Application.Current.Shutdown())

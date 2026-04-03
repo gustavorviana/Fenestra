@@ -15,10 +15,6 @@ internal sealed class TrayIconService : TrayIconServiceBase
 {
     private HwndSource? _hwndSource;
 
-    // ---------------------------------------------------------------------------
-    // Window handle — base class calls this once on first use
-    // ---------------------------------------------------------------------------
-
     protected override IntPtr CreateWindowHandle()
     {
         var parameters = new HwndSourceParameters("FenestraTrayIcon")
@@ -36,18 +32,9 @@ internal sealed class TrayIconService : TrayIconServiceBase
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        if (ProcessMessage((uint)msg, wParam, lParam))
-        {
-            handled = true;
-            return IntPtr.Zero;
-        }
-
+        handled = ProcessMessage((uint)msg, wParam, lParam);
         return IntPtr.Zero;
     }
-
-    // ---------------------------------------------------------------------------
-    // Context Menu (WPF ContextMenu)
-    // ---------------------------------------------------------------------------
 
     protected override void OnShowContextMenu()
     {
@@ -55,11 +42,15 @@ internal sealed class TrayIconService : TrayIconServiceBase
 
         var menu = new ContextMenu();
 
-        ResolveTheme(out var bg, out var fg, out var border, out var separator);
+        var colors = MenuStyle.Resolve(IsWindowsDarkMode());
+        var bg = colors.Background?.ToBrush();
+        var fg = colors.Foreground?.ToBrush();
+        var border = colors.Border?.ToBrush();
+        var separator = colors.Separator?.ToBrush();
 
-        bool hasCustomTheme = bg != null || MenuCornerRadius > 0;
+        bool hasCustomTheme = bg != null || MenuStyle.CornerRadius > 0;
         if (hasCustomTheme)
-            ApplyMenuTheme(menu, bg ?? SystemColors.MenuBrush, fg, border, separator, MenuCornerRadius);
+            ApplyMenuTheme(menu, bg ?? SystemColors.MenuBrush, fg, border, separator, MenuStyle.CornerRadius);
 
         BuildMenu(menu.Items, MenuItems, fg, hasCustomTheme ? bg : null);
 
@@ -68,10 +59,6 @@ internal sealed class TrayIconService : TrayIconServiceBase
         NativeMethods.SetForegroundWindow(_hwndSource.Handle);
         menu.IsOpen = true;
     }
-
-    // ---------------------------------------------------------------------------
-    // Dispose — clean up HwndSource
-    // ---------------------------------------------------------------------------
 
     protected override void Dispose(bool disposing)
     {
@@ -83,57 +70,6 @@ internal sealed class TrayIconService : TrayIconServiceBase
         }
 
         base.Dispose(disposing);
-    }
-
-    // ---------------------------------------------------------------------------
-    // Theme resolution
-    // ---------------------------------------------------------------------------
-
-    private void ResolveTheme(out Brush? background, out Brush? foreground, out Brush? border, out Brush? separator)
-    {
-        if (MenuBackground != null)
-        {
-            background = MenuBackground?.ToBrush();
-            foreground = null;
-            border = new SolidColorBrush(Color.FromRgb(0x66, 0x66, 0x66));
-            separator = new SolidColorBrush(Color.FromRgb(0x88, 0x88, 0x88));
-            return;
-        }
-
-        bool isDark;
-        switch (MenuTheme)
-        {
-            case TrayMenuTheme.Dark:
-                isDark = true;
-                break;
-            case TrayMenuTheme.Light:
-                isDark = false;
-                break;
-            case TrayMenuTheme.System:
-                isDark = IsWindowsDarkMode();
-                break;
-            default:
-                background = null;
-                foreground = null;
-                border = null;
-                separator = null;
-                return;
-        }
-
-        if (isDark)
-        {
-            background = new SolidColorBrush(Color.FromRgb(0x2B, 0x2B, 0x2B));
-            foreground = new SolidColorBrush(Color.FromRgb(0xE0, 0xE0, 0xE0));
-            border = new SolidColorBrush(Color.FromRgb(0x50, 0x50, 0x50));
-            separator = new SolidColorBrush(Color.FromRgb(0x50, 0x50, 0x50));
-        }
-        else
-        {
-            background = new SolidColorBrush(Color.FromRgb(0xF3, 0xF3, 0xF3));
-            foreground = new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1A));
-            border = new SolidColorBrush(Color.FromRgb(0xCC, 0xCC, 0xCC));
-            separator = new SolidColorBrush(Color.FromRgb(0xD0, 0xD0, 0xD0));
-        }
     }
 
     private static bool IsWindowsDarkMode()
@@ -152,10 +88,6 @@ internal sealed class TrayIconService : TrayIconServiceBase
 
         return false;
     }
-
-    // ---------------------------------------------------------------------------
-    // WPF menu helpers
-    // ---------------------------------------------------------------------------
 
     private static void ApplyMenuTheme(ContextMenu menu, Brush background, Brush? foreground,
         Brush? borderBrush, Brush? separatorBrush, double cornerRadius)

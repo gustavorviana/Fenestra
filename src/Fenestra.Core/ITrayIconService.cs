@@ -1,4 +1,3 @@
-using Fenestra.Core.Drawing;
 using Fenestra.Core.Models;
 using Fenestra.Core.Tray;
 
@@ -19,24 +18,9 @@ public interface ITrayIconService : IDisposable
     void SetOverlay(ITrayIconOverlay overlay);
 
     /// <summary>
-    /// Background color for the context menu (hex string like "#FF0000" or named color).
-    /// Overrides the theme background when set. Set to null to use the theme default.
+    /// Style settings for the context menu (theme, background, corner radius).
     /// </summary>
-    FenestralColor? MenuBackground { get; set; }
-
-    /// <summary>
-    /// Corner radius for the context menu. Set to 0 for sharp corners (default).
-    /// </summary>
-    double MenuCornerRadius { get; set; }
-
-    /// <summary>
-    /// Theme for the context menu. When set to System, follows the Windows dark/light mode setting.
-    /// </summary>
-    TrayMenuTheme MenuTheme { get; set; }
-
-    // ---------------------------------------------------------------------------
-    // Events
-    // ---------------------------------------------------------------------------
+    ITrayMenuStyle MenuStyle { get; }
 
     event EventHandler? Click;
     event EventHandler? DoubleClick;

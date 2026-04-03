@@ -1,4 +1,3 @@
-using Fenestra.Core.Drawing;
 using Fenestra.Core.Models;
 using Fenestra.Core.Native;
 using System.Runtime.InteropServices;
@@ -41,9 +40,8 @@ public abstract class TrayIconServiceBase : FenestraComponent, ITrayIconService
     #endregion
 
     #region Properties
-    public FenestralColor? MenuBackground { get; set; }
-    public double MenuCornerRadius { get; set; }
-    public TrayMenuTheme MenuTheme { get; set; }
+    public TrayMenuStyle MenuStyle { get; } = new();
+    ITrayMenuStyle ITrayIconService.MenuStyle => MenuStyle;
 
     protected IntPtr WindowHandle => _hwnd;
     protected IReadOnlyList<TrayMenuItem>? MenuItems => _menuItems;
