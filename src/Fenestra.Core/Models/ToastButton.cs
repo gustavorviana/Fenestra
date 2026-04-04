@@ -9,8 +9,22 @@ public class ToastButton
     public string? ImageUri { get; set; }
     public ToastButtonStyle Style { get; set; }
     public string? Tooltip { get; set; }
-    public bool IsContextMenu { get; set; }
     public string? InputId { get; set; }
-    public bool IsSnooze { get; set; }
-    public bool IsDismiss { get; set; }
+    public ToastButtonType Type { get; set; }
+}
+
+/// <summary>Specifies the behavior type of a toast button.</summary>
+public enum ToastButtonType
+{
+    /// <summary>Standard action button.</summary>
+    Action,
+
+    /// <summary>Context menu item (shown on right-click).</summary>
+    ContextMenu,
+
+    /// <summary>System-managed snooze button.</summary>
+    Snooze,
+
+    /// <summary>System-managed dismiss button.</summary>
+    Dismiss
 }

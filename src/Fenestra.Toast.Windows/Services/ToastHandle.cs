@@ -14,6 +14,10 @@ internal class ToastHandle : IToastHandle
     public string Tag => _internalHandle.Tag ?? string.Empty;
     public string? Group => _internalHandle.Group;
     public ToastHandleState State { get; private set; } = ToastHandleState.Active;
+    public bool SuppressPopup => _internalHandle.SuppressPopup;
+    public ToastPriority Priority => _internalHandle.Priority;
+    public bool ExpiresOnReboot => _internalHandle.ExpiresOnReboot;
+    public DateTimeOffset? ExpirationTime => _internalHandle.ExpirationTime;
 
     public event EventHandler<ToastActivatedArgs>? Activated;
     public event EventHandler<ToastDismissalReason>? Dismissed;
@@ -48,7 +52,7 @@ internal class ToastHandle : IToastHandle
     {
         if (State != ToastHandleState.Active) return;
         State = ToastHandleState.Removed;
-        _internalHandle.RemoveInternal(Tag, Group);
+        _internalHandle.HideNotification();
         _toastService.OnHandleDisposed(this);
     }
 
@@ -58,6 +62,12 @@ internal class ToastHandle : IToastHandle
         State = ToastHandleState.Removed;
         _internalHandle.RemoveInternal(Tag, Group);
         _toastService.OnHandleDisposed(this);
+    }
+
+    public void RemoveGroup()
+    {
+        if (State != ToastHandleState.Active || Group == null) return;
+        _internalHandle.RemoveGroupInternal(Group);
     }
 
     public void Dispose()

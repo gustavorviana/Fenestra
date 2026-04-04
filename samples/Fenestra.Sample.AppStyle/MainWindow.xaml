@@ -147,6 +147,22 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+
+            <!-- Event Log -->
+            <TabItem Header="Event Log">
+                <DockPanel Margin="15">
+                    <Button DockPanel.Dock="Top" Content="Clear Log" Click="OnClearEventLog"
+                            HorizontalAlignment="Right" Margin="0,0,0,8" Padding="12,4" />
+                    <ListBox x:Name="EventLogList" FontFamily="Consolas" FontSize="12"
+                             BorderThickness="1" BorderBrush="#CCC">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </TabItem>
         </TabControl>
     </DockPanel>
 </Window>

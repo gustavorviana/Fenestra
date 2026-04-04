@@ -156,7 +156,7 @@ internal static class ToastXmlBuilder
             {
                 sb.Append("<action");
 
-                if (btn.IsSnooze)
+                if (btn.Type == ToastButtonType.Snooze)
                 {
                     sb.Append(" activationType=\"system\" arguments=\"snooze\"");
                     if (!string.IsNullOrEmpty(btn.InputId))
@@ -165,7 +165,7 @@ internal static class ToastXmlBuilder
                     continue;
                 }
 
-                if (btn.IsDismiss)
+                if (btn.Type == ToastButtonType.Dismiss)
                 {
                     sb.Append(" activationType=\"system\" arguments=\"dismiss\" content=\"\"/>");
                     continue;
@@ -184,7 +184,7 @@ internal static class ToastXmlBuilder
                     sb.Append(" hint-buttonStyle=\"Critical\"");
                 if (!string.IsNullOrEmpty(btn.Tooltip))
                     sb.AppendFormat(" hint-toolTip=\"{0}\"", Escape(btn.Tooltip));
-                if (btn.IsContextMenu)
+                if (btn.Type == ToastButtonType.ContextMenu)
                     sb.Append(" placement=\"contextMenu\"");
                 if (!string.IsNullOrEmpty(btn.InputId))
                     sb.AppendFormat(" hint-inputId=\"{0}\"", Escape(btn.InputId));

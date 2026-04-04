@@ -352,12 +352,36 @@ internal static class ToastInteropConstants
 
     /// <summary>IPropertyValue — unboxing for primitives.</summary>
     public static readonly Guid IID_IPropertyValue = new("4BD682DD-7554-40E9-9A9B-82654EDE7E62");
+    // Slot 6:  get_Type(out PropertyType)
+    // Slot 7:  get_IsNumericScalar(out boolean)
+    // Slot 8–18: GetUInt8..GetBoolean
+    // Slot 19: GetString(out HSTRING)
+    public const int Slot_PV_GetString = 19;
 
     /// <summary>IPropertySet — string-to-object map (extends IObservableMap).</summary>
     public static readonly Guid IID_IPropertySet = new("8A43ED9F-F4E6-4421-ACF9-1DAB2986820C");
 
     /// <summary>IValueSet — used by ToastActivatedEventArgs2.UserInput.</summary>
     public static readonly Guid IID_IValueSet = new("8A43ED9F-F4E6-4421-ACF9-1DAB2986820C"); // same as IPropertySet
+
+    // =========================================================================
+    // Foundation Collection Interfaces (parameterized for String, Object)
+    // Used for iterating IPropertySet / ValueSet from toast UserInput.
+    // GUIDs computed from WinRT parameterized type signatures (UUID v5).
+    // =========================================================================
+
+    /// <summary>IIterable&lt;IKeyValuePair&lt;String, Object&gt;&gt;</summary>
+    public static readonly Guid IID_IIterable_KVP_String_Object = new("FE2F3D47-5D47-5499-8374-430C7CDA0204");
+
+    /// <summary>IIterator&lt;IKeyValuePair&lt;String, Object&gt;&gt;</summary>
+    public static readonly Guid IID_IIterator_KVP_String_Object = new("5DB5FA32-707C-5849-A06B-91C8EB9D10E8");
+
+    /// <summary>IKeyValuePair&lt;String, Object&gt;</summary>
+    public static readonly Guid IID_IKeyValuePair_String_Object = new("09335560-6C6B-5A26-9348-97B781132B20");
+    // Slot 6: get_Key(out HSTRING)
+    // Slot 7: get_Value(out IInspectable*)
+    public const int Slot_KVP_Object_get_Key = 6;
+    public const int Slot_KVP_Object_get_Value = 7;
 
     // =========================================================================
     // Shell Link / Shortcut Interfaces (for AUMID + Toast Activation)

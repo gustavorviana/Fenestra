@@ -219,7 +219,7 @@ public class ToastBuilder
     /// </summary>
     public ToastBuilder AddContextMenuItem(string text, string argument)
     {
-        _content.Buttons.Add(new ToastButton { Text = text, Argument = argument, IsContextMenu = true });
+        _content.Buttons.Add(new ToastButton { Text = text, Argument = argument, Type = ToastButtonType.ContextMenu });
         return this;
     }
 
@@ -228,7 +228,7 @@ public class ToastBuilder
     /// </summary>
     public ToastBuilder AddSnoozeButton(string? selectionInputId = null)
     {
-        _content.Buttons.Add(new ToastButton { IsSnooze = true, InputId = selectionInputId });
+        _content.Buttons.Add(new ToastButton { Type = ToastButtonType.Snooze, InputId = selectionInputId });
         return this;
     }
 
@@ -237,7 +237,7 @@ public class ToastBuilder
     /// </summary>
     public ToastBuilder AddDismissButton()
     {
-        _content.Buttons.Add(new ToastButton { IsDismiss = true });
+        _content.Buttons.Add(new ToastButton { Type = ToastButtonType.Dismiss });
         return this;
     }
 

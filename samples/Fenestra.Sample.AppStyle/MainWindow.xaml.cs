@@ -1,5 +1,6 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -13,6 +14,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
     private readonly IEventBus _bus;
     private readonly IAutoStartService _autoStart;
     private readonly IToastService _toast;
+    private readonly ObservableCollection<string> _eventLog = new();
 
     private IToastHandle? _progressHandle;
     private ToastProgressTracker? _progressTracker;
@@ -33,6 +35,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
         _autoStart = autoStart;
         _toast = toast;
 
+        EventLogList.ItemsSource = _eventLog;
     }
 
     // --- General tab ---
@@ -108,6 +111,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             if (!string.IsNullOrWhiteSpace(ToastAttribution.Text))
                 t.Attribution(ToastAttribution.Text);
         });
+        ListenToast(handle);
         SetStatus($"Toast shown (tag: {handle.Tag})");
     }
 
@@ -124,6 +128,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             if (scenario == ToastScenario.Reminder || scenario == ToastScenario.Alarm)
                 t.AddDismissButton();
         });
+        ListenToast(handle);
         SetStatus($"Toast shown with scenario: {scenario}");
     }
 
@@ -138,8 +143,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             .AddButton("Decline", "decline", ToastButtonStyle.Critical)
             .AddContextMenuItem("Copy", "copy")
         );
-
-        handle.Activated += (_, args) => SetStatus($"Button clicked: {args.Arguments}");
+        ListenToast(handle);
         SetStatus("Toast with buttons shown");
     }
 
@@ -154,12 +158,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
                 .Argument("send")
                 .ForInput("reply"))
         );
-
-        handle.Activated += (_, args) =>
-        {
-            var text = args.UserInput.TryGetValue("reply", out var v) ? v : "(empty)";
-            SetStatus($"Reply sent: {text}");
-        };
+        ListenToast(handle);
         SetStatus("Toast with text input shown");
     }
 
@@ -178,6 +177,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             .AddSnoozeButton("snooze")
             .AddDismissButton()
         );
+        ListenToast(handle);
         SetStatus("Toast with dropdown shown");
     }
 
@@ -190,11 +190,12 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             return;
         }
 
-        _toast.Show(t => t
+        var handle = _toast.Show(t => t
             .Title("Hero Image Toast")
             .Body("Check out this image!")
             .HeroImage(path)
         );
+        ListenToast(handle);
         SetStatus("Toast with hero image shown");
     }
 
@@ -207,11 +208,12 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             return;
         }
 
-        _toast.Show(t => t
+        var handle = _toast.Show(t => t
             .Title("App Logo Toast")
             .Body("With custom logo!")
             .AppLogo(path, ToastImageCrop.Circle)
         );
+        ListenToast(handle);
         SetStatus("Toast with app logo shown");
     }
 
@@ -226,7 +228,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             _ => ToastAudio.Default
         };
 
-        _toast.Show(t =>
+        var handle = _toast.Show(t =>
         {
             t.Title(ToastTitle.Text).Body(ToastBody.Text);
 
@@ -238,6 +240,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             if (sound >= ToastAudio.Alarm1)
                 t.Duration(ToastDuration.Long).AudioLoop();
         });
+        ListenToast(handle);
         SetStatus($"Toast with audio: {sound}");
     }
 
@@ -250,6 +253,7 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
             .Title("Download")
             .BindProgress(_progressTracker)
         );
+        ListenToast(_progressHandle);
 
         var value = ToastProgressSlider.Value / 100.0;
         _progressTracker.Report(value, ToastProgressStatus.Text);
@@ -279,6 +283,65 @@ public partial class MainWindow : Window, IMinimizeToTray, IRememberWindowState
         _progressHandle = null;
         _progressTracker = null;
         SetStatus("All notifications cleared");
+    }
+
+    // --- Event Log tab ---
+
+    private void ListenToast(IToastHandle handle)
+    {
+        var tag = handle.Tag.Length > 16 ? handle.Tag[..16] + ".." : handle.Tag;
+        var props = new List<string>();
+        if (handle.Group != null) props.Add($"group={handle.Group}");
+        if (handle.SuppressPopup) props.Add("suppress=true");
+        if (handle.Priority != ToastPriority.Default) props.Add($"priority={handle.Priority}");
+        if (handle.ExpiresOnReboot) props.Add("expiresOnReboot=true");
+        if (handle.ExpirationTime.HasValue) props.Add($"expires={handle.ExpirationTime.Value:HH:mm:ss}");
+
+        var extra = props.Count > 0 ? "  " + string.Join("  ", props) : "";
+        LogToEvent($"Shown  tag={tag}{extra}");
+
+        handle.Activated += (_, args) =>
+        {
+            var parts = new List<string> { $"Activated  tag={tag}" };
+
+            if (!string.IsNullOrEmpty(args.Arguments))
+                parts.Add($"args={args.Arguments}");
+            else
+                parts.Add("args=(body click)");
+
+            foreach (var kv in args.UserInput)
+                parts.Add($"{kv.Key}=\"{kv.Value}\"");
+
+            LogToEvent(string.Join("  ", parts));
+            SetStatus($"Activated: {args.Arguments}");
+        };
+
+        handle.Dismissed += (_, reason) =>
+        {
+            LogToEvent($"Dismissed  tag={tag}  reason={reason}");
+            SetStatus($"Dismissed: {reason}");
+        };
+
+        handle.Failed += (_, errorCode) =>
+        {
+            LogToEvent($"Failed  tag={tag}  HRESULT=0x{errorCode:X8}");
+            SetStatus($"Failed: 0x{errorCode:X8}");
+        };
+    }
+
+    private void LogToEvent(string message)
+    {
+        var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
+        _eventLog.Add(line);
+
+        // Auto-scroll to latest
+        if (_eventLog.Count > 0)
+            EventLogList.ScrollIntoView(_eventLog[_eventLog.Count - 1]);
+    }
+
+    private void OnClearEventLog(object sender, RoutedEventArgs e)
+    {
+        _eventLog.Clear();
     }
 
     private void SetStatus(string text) => StatusText.Text = text;

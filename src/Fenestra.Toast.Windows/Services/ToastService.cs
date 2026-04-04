@@ -54,6 +54,23 @@ internal class ToastService : IToastService, IDisposable
         var handle = new ToastHandle(this, internalHandle);
         lock (_active) _active.Add(handle);
 
+        // Wire COM event callbacks → marshal to UI thread → raise on ToastHandle
+        internalHandle.OnActivated = args =>
+        {
+            try { _ = _threadContext.InvokeAsync(() => handle.RaiseActivated(args)); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
+        };
+        internalHandle.OnDismissed = reason =>
+        {
+            try { _ = _threadContext.InvokeAsync(() => handle.RaiseDismissed(reason)); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
+        };
+        internalHandle.OnFailed = errorCode =>
+        {
+            try { _ = _threadContext.InvokeAsync(() => handle.RaiseFailed(errorCode)); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
+        };
+
         internalHandle.Show(toast.ProgressTracker);
 
         return handle;

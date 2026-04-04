@@ -23,6 +23,28 @@ public interface IToastHandle : IDisposable
     ToastHandleState State { get; }
 
     /// <summary>
+    /// Gets whether the popup was suppressed when this toast was shown.
+    /// When true, the toast goes directly to Action Center without appearing on screen.
+    /// </summary>
+    bool SuppressPopup { get; }
+
+    /// <summary>
+    /// Gets the priority of this toast notification.
+    /// </summary>
+    ToastPriority Priority { get; }
+
+    /// <summary>
+    /// Gets whether this toast is automatically removed from Action Center when the device reboots.
+    /// </summary>
+    bool ExpiresOnReboot { get; }
+
+    /// <summary>
+    /// Gets the absolute time when this toast auto-expires from Action Center.
+    /// Null means the notification uses the system default expiration (3 days).
+    /// </summary>
+    DateTimeOffset? ExpirationTime { get; }
+
+    /// <summary>
     /// Updates the data bindings of this toast (for progress bars).
     /// </summary>
     void Update(Dictionary<string, string> data);
@@ -33,14 +55,22 @@ public interface IToastHandle : IDisposable
     void Update(Action<ToastBuilder> configure);
 
     /// <summary>
-    /// Hides this toast from the screen.
+    /// Dismisses this toast immediately from the screen and removes it from Action Center.
+    /// Uses IToastNotifier.Hide which removes the notification entirely.
     /// </summary>
     void Hide();
 
     /// <summary>
-    /// Removes this toast from Action Center.
+    /// Removes this toast from Action Center by tag (and group, if set).
+    /// The toast may still be visible on screen until it times out or the user dismisses it.
     /// </summary>
     void Remove();
+
+    /// <summary>
+    /// Removes all notifications in this toast's group from Action Center.
+    /// Requires <see cref="Group"/> to be set; does nothing if Group is null.
+    /// </summary>
+    void RemoveGroup();
 
     /// <summary>
     /// Raised when the user clicks a button or the toast body.
@@ -48,7 +78,7 @@ public interface IToastHandle : IDisposable
     event EventHandler<ToastActivatedArgs>? Activated;
 
     /// <summary>
-    /// Raised when this toast is dismissed.
+    /// Raised when this toast is dismissed (by user, timeout, or application).
     /// </summary>
     event EventHandler<ToastDismissalReason>? Dismissed;
 

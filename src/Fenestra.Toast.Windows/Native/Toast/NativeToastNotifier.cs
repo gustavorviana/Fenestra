@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using static Fenestra.Toast.Windows.Native.Toast.ToastInteropConstants;
 
 namespace Fenestra.Toast.Windows.Native.Toast;
@@ -66,6 +67,28 @@ internal sealed class NativeToastNotifier : IDisposable
         if (p != null) WinRtToastInterop.CallSetBool(p, Slot_Notification6_put_ExpiresOnReboot, value);
     }
 
+    public void SetExpirationTime(ComPointerHandle pNotif, DateTimeOffset expirationTime)
+    {
+        using var pNotification = pNotif.QueryInterface(IID_IToastNotification);
+        if (pNotification == null) return;
+
+        using var pBoxed = BoxDateTime(expirationTime);
+        if (pBoxed == null) return;
+
+        WinRtToastInterop.CallWithPtr(pNotification, Slot_Notification_put_ExpirationTime, pBoxed.DangerousGetHandle());
+    }
+
+    // --- Events ---
+
+    public long AddActivatedHandler(ComPointerHandle pNotif, IntPtr pHandler)
+        => WinRtToastInterop.CallAddEvent(pNotif, Slot_Notification_add_Activated, pHandler);
+
+    public long AddDismissedHandler(ComPointerHandle pNotif, IntPtr pHandler)
+        => WinRtToastInterop.CallAddEvent(pNotif, Slot_Notification_add_Dismissed, pHandler);
+
+    public long AddFailedHandler(ComPointerHandle pNotif, IntPtr pHandler)
+        => WinRtToastInterop.CallAddEvent(pNotif, Slot_Notification_add_Failed, pHandler);
+
     // --- Update ---
 
     public int Update(string tag, string? group, Dictionary<string, string> data, uint sequenceNumber)
@@ -78,6 +101,24 @@ internal sealed class NativeToastNotifier : IDisposable
     public void HistoryRemoveGroup(string group) => NativeToastHistory.RemoveGroup(group);
     public void HistoryClear() => NativeToastHistory.Clear();
     public void HistoryClearWithId(string appId) => NativeToastHistory.ClearWithId(appId);
+
+    // --- Private ---
+
+    private static ComPointerHandle? BoxDateTime(DateTimeOffset value)
+    {
+        using var pFactory = WinRtToastInterop.GetActivationFactory(
+            "Windows.Foundation.PropertyValue", IID_IPropertyValueStatics);
+        if (pFactory == null) return null;
+
+        long winrtDateTime = value.UtcDateTime.ToFileTimeUtc();
+        var fn = ComFactory.GetDelegate<CreateDateTimeDelegate>(
+            WinRtToastInterop.GetVtableSlot(pFactory, Slot_PV_CreateDateTime));
+        var hr = fn(pFactory.DangerousGetHandle(), winrtDateTime, out var result);
+        return hr == 0 && result != IntPtr.Zero ? new ComPointerHandle(result) : null;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+    private delegate int CreateDateTimeDelegate(IntPtr @this, long dateTime, out IntPtr result);
 
     // --- Dispose ---
 
