@@ -183,6 +183,9 @@ public class FenestraApplication : IHost, IWpfApplication
 
         singleInstance?.StartListening();
 
+        var toastActivation = Services.GetService(typeof(Windows.IToastActivationRegistrar)) as Windows.IToastActivationRegistrar;
+        toastActivation?.Register();
+
         var shell = ResolveMainWindow();
 
         if (shell is null)
@@ -210,6 +213,8 @@ public class FenestraApplication : IHost, IWpfApplication
 
         wpfApp.Run(shell);
 
+        var windowState = Services.GetService<Services.WindowStateService>();
+        windowState?.SaveAll();
         _cts.Cancel();
         StopAsync().GetAwaiter().GetResult();
         Dispose();

@@ -15,6 +15,7 @@ internal class ToastService : IToastService, IDisposable
     private readonly string _appId;
     private readonly bool _supported;
     private readonly IThreadContext _threadContext;
+    private readonly IApplicationActivator? _activator;
     private readonly IWindowsNotificationRegistrationManager? _registrationManager;
     private readonly List<ToastHandle> _active = new();
     private NativeToastNotifier? _notifier = null!;
@@ -25,11 +26,12 @@ internal class ToastService : IToastService, IDisposable
         get { lock (_active) return _active.ToArray(); }
     }
 
-    public ToastService(AppInfo appInfo, IThreadContext threadContext, IWindowsNotificationRegistrationManager? registrationManager = null)
+    public ToastService(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null, IWindowsNotificationRegistrationManager? registrationManager = null)
     {
         _appId = appInfo.AppId;
         _supported = IsSupported();
         _threadContext = threadContext;
+        _activator = activator;
         _registrationManager = registrationManager;
 
         if (_supported)
@@ -58,7 +60,11 @@ internal class ToastService : IToastService, IDisposable
         // Wire COM event callbacks → marshal to UI thread → raise on ToastHandle
         internalHandle.OnActivated = args =>
         {
-            try { _ = _threadContext.InvokeAsync(() => handle.RaiseActivated(args)); }
+            try { _ = _threadContext.InvokeAsync(() =>
+            {
+                _activator?.BringToForeground();
+                handle.RaiseActivated(args);
+            }); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
         };
         internalHandle.OnDismissed = reason =>

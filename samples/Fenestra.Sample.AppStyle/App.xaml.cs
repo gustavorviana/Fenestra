@@ -26,6 +26,7 @@ public partial class App : FenestraApp
         builder.UseAutoStart();
         builder.UseGlobalHotkeys();
         builder.UseToastNotifications();
+        builder.UseToastActivation(Guid.Parse("64BD1DB5-C8C7-41D1-958F-30B13D3F18ED"));
         builder.RegisterWindows();
     }
 

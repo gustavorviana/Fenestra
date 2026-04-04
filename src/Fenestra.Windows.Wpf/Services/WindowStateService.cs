@@ -8,6 +8,7 @@ namespace Fenestra.Wpf.Services;
 internal class WindowStateService
 {
     private readonly IWindowPositionStorage _storage;
+    private readonly Dictionary<string, Window> _tracked = new();
 
     public WindowStateService(IWindowPositionStorage storage)
     {
@@ -38,12 +39,20 @@ internal class WindowStateService
             }
         }
 
+        _tracked[key] = window;
         window.Closing += (_, _) => Save(key, window);
+        window.Closed += (_, _) => _tracked.Remove(key);
         window.IsVisibleChanged += (_, _) =>
         {
             if (!window.IsVisible)
                 Save(key, window);
         };
+    }
+
+    public void SaveAll()
+    {
+        foreach (var entry in _tracked)
+            Save(entry.Key, entry.Value);
     }
 
     private void Save(string key, Window window)

@@ -90,7 +90,7 @@ public sealed class WindowsNotificationRegistrationManager : IWindowsNotificatio
         if (hr < 0) Marshal.ThrowExceptionForHR(hr);
     }
 
-    private static string GetCurrentExecutablePath()
+    internal static string GetCurrentExecutablePath()
     {
         using var process = Process.GetCurrentProcess();
         var path = process.MainModule?.FileName;

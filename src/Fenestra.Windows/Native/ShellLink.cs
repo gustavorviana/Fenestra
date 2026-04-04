@@ -15,6 +15,9 @@ internal sealed class ShellLink : IDisposable
     /// <summary>CLSID for the Shell Link COM coclass (00021401-...).</summary>
     private static readonly Guid CLSID_ShellLink = new("00021401-0000-0000-C000-000000000046");
 
+    /// <summary>STGM_READWRITE — read/write access for IPersistFile.Load.</summary>
+    private const uint STGM_READWRITE = 2;
+
     /// <summary>PKEY_AppUserModel_ID — {9F4C2855-...}, pid=5. Sets the AUMID on the shortcut.</summary>
     private static readonly PROPERTYKEY PKEY_AppUserModelId = new()
     {
@@ -60,7 +63,7 @@ internal sealed class ShellLink : IDisposable
             try
             {
                 var persist = (IPersistFile)link;
-                persist.Load(path, 0);
+                persist.Load(path, STGM_READWRITE);
             }
             catch
             {

@@ -1,37 +1,45 @@
+using Fenestra.Core;
 using Fenestra.Core.Models;
+using Fenestra.Windows.Native;
 using Fenestra.Windows.Native.Toast;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Fenestra.Windows.Services;
 
 /// <summary>
-/// Registers COM server + Start Menu shortcut so toast activations relaunch the app when closed.
-/// When the app IS running, the WinRT Activated event on <see cref="IToastService"/> handles activation.
-/// When the app is NOT running, Windows relaunches the EXE. Use <see cref="ISingleInstanceApp"/>
-/// to receive the activation arguments on relaunch.
+/// Registers the application for toast background activation so clicking a toast
+/// when the app is closed relaunches it. Handles three things:
+/// <list type="number">
+///   <item>Registry COM server (LocalServer32) so Windows knows which EXE to launch.</item>
+///   <item>Start Menu shortcut with <c>ToastActivatorCLSID</c> so Windows links toasts to the COM server.</item>
+///   <item>Runtime COM class factory (<c>CoRegisterClassObject</c>) so Windows can deliver the activation callback.</item>
+/// </list>
+/// Opt in via <c>builder.UseToastActivation()</c>.
 /// </summary>
-internal class ToastActivationRegistrar : IToastActivationRegistrar
+internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
 {
+    private readonly AppInfo _appInfo;
+    private readonly IThreadContext _threadContext;
+    private readonly IApplicationActivator? _activator;
+    private readonly Guid _clsid;
     private readonly string _shortcutPath;
     private readonly string _exePath;
-    private readonly string _appId;
-    private readonly Guid _activatorClsid;
-    private readonly bool _supported;
     private bool _registered;
 
     /// <inheritdoc />
     public bool IsRegistered => _registered;
 
-    public ToastActivationRegistrar(AppInfo appInfo, ToastActivationOptions options)
+    public ToastActivationRegistrar(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null, ToastActivationOptions? options = null)
     {
-        _appId = appInfo.AppId;
-        _activatorClsid = options.ActivatorClsid;
-        _supported = Environment.OSVersion.Version.Major >= 10;
-
-        _exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName
-            ?? System.Reflection.Assembly.GetEntryAssembly()?.Location
-            ?? string.Empty;
-
-        _shortcutPath = Path.Combine(
+        _appInfo = appInfo;
+        _threadContext = threadContext;
+        _activator = activator;
+        _clsid = options?.ActivatorClsid is { } guid && guid != Guid.Empty
+            ? guid
+            : GenerateActivatorClsid(appInfo.AppId);
+        _exePath = WindowsNotificationRegistrationManager.GetCurrentExecutablePath();
+        _shortcutPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             @"Microsoft\Windows\Start Menu\Programs",
             $"{appInfo.AppName}.lnk");
@@ -40,14 +48,18 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar
     /// <inheritdoc />
     public void Register()
     {
-        if (!_supported || string.IsNullOrEmpty(_exePath)) return;
+        if (_registered) return;
 
         try
         {
-            ToastActivationInterop.RegisterComServer(_exePath, _activatorClsid);
+            RegisterComServerInRegistry();
+            EnsureShortcutHasClsid();
 
-            if (!File.Exists(_shortcutPath))
-                ToastActivationInterop.CreateShortcut(_shortcutPath, _exePath, _appId, _activatorClsid);
+            NotificationActivatorServer.Register(_clsid, (_, _) =>
+            {
+                try { _ = _threadContext.InvokeAsync(() => _activator?.BringToForeground()); }
+                catch { }
+            });
 
             _registered = true;
         }
@@ -57,24 +69,48 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar
     /// <inheritdoc />
     public void Unregister()
     {
+        NotificationActivatorServer.Unregister();
+
         try
         {
-            ToastActivationInterop.UnregisterComServer(_activatorClsid);
-            ToastActivationInterop.RemoveShortcut(_shortcutPath);
-            _registered = false;
+            var regPath = $@"SOFTWARE\Classes\CLSID\{{{_clsid}}}";
+            Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(regPath, false);
         }
         catch { }
-    }
-}
 
-/// <summary>
-/// Options for configuring toast background activation.
-/// </summary>
-public class ToastActivationOptions
-{
+        _registered = false;
+    }
+
+    public void Dispose()
+    {
+        NotificationActivatorServer.Unregister();
+    }
+
+    private void RegisterComServerInRegistry()
+    {
+        var regPath = $@"SOFTWARE\Classes\CLSID\{{{_clsid}}}\LocalServer32";
+        using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(regPath);
+        key.SetValue(null, $"\"{_exePath}\"");
+    }
+
+    private void EnsureShortcutHasClsid()
+    {
+        using var link = ShellLink.Create(_shortcutPath);
+        link.ToastActivatorClsid = _clsid;
+        link.Save();
+    }
+
     /// <summary>
-    /// A stable GUID for the toast activator COM class. Must never change once deployed.
-    /// Generate one with <c>Guid.NewGuid()</c> and hardcode it in your app.
+    /// Generates a deterministic GUID from the AppId so the CLSID is stable across restarts.
     /// </summary>
-    public Guid ActivatorClsid { get; set; }
+    private static Guid GenerateActivatorClsid(string appId)
+    {
+        using var sha = SHA256.Create();
+        var hash = sha.ComputeHash(Encoding.UTF8.GetBytes("Fenestra.ToastActivator:" + appId));
+        var bytes = new byte[16];
+        Array.Copy(hash, bytes, 16);
+        bytes[6] = (byte)((bytes[6] & 0x0F) | 0x50); // UUID version 5
+        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80); // UUID variant 1
+        return new Guid(bytes);
+    }
 }

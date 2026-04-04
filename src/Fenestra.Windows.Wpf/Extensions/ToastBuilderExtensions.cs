@@ -20,14 +20,25 @@ public static class FenestraBuilderExtensions
     }
 
     /// <summary>
-    /// Registers the application for toast background activation (relaunch when clicked after app is closed).
-    /// Requires a stable GUID that must never change once deployed.
+    /// Enables toast background activation so clicking a notification relaunches the app when it is closed.
+    /// The CLSID is derived deterministically from the application's AppId.
+    /// Requires <see cref="UseToastNotifications"/> to be called first.
     /// </summary>
-    public static FenestraBuilder UseToastActivation(this FenestraBuilder builder, Action<ToastActivationOptions> configure)
+    public static FenestraBuilder UseToastActivation(this FenestraBuilder builder)
     {
-        var options = new ToastActivationOptions();
-        configure(options);
-        builder.Services.AddSingleton(options);
+        builder.Services.AddSingleton<IToastActivationRegistrar, ToastActivationRegistrar>();
+        return builder;
+    }
+
+    /// <summary>
+    /// Enables toast background activation with an explicit COM activator CLSID.
+    /// Use this overload when you need a stable, hardcoded GUID (recommended for production).
+    /// Generate one with <c>Guid.NewGuid()</c> and never change it once deployed.
+    /// Requires <see cref="UseToastNotifications"/> to be called first.
+    /// </summary>
+    public static FenestraBuilder UseToastActivation(this FenestraBuilder builder, Guid activatorClsid)
+    {
+        builder.Services.AddSingleton(new ToastActivationOptions { ActivatorClsid = activatorClsid });
         builder.Services.AddSingleton<IToastActivationRegistrar, ToastActivationRegistrar>();
         return builder;
     }

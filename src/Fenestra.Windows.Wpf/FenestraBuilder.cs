@@ -299,6 +299,7 @@ public class FenestraBuilder
             }
 
             services.AddSingleton<WindowStateService>();
+            services.AddSingleton<IApplicationActivator, WpfApplicationActivator>();
             services.AddSingleton<IWindowManager, WindowManager>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddSingleton<IEventBus, EventBus>();
