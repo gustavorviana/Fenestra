@@ -66,7 +66,7 @@ internal class ToastService : IToastService, IDisposable
     {
         if (!_supported || _notifier == null) return;
         try { _notifier.HistoryClearWithId(_appId); }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
         lock (_active) _active.Clear();
     }
 
@@ -85,14 +85,14 @@ internal class ToastService : IToastService, IDisposable
     {
         if (_notifier == null) return;
         try { _notifier.Update(tag, group, data, sequenceNumber); }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
     internal void ReplaceInternal(ToastContent toast, ToastHandle handle)
     {
         if (_notifier == null) return;
         try { ShowInternal(toast, handle); }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
     internal void RemoveInternal(string tag, string? group)
@@ -105,7 +105,7 @@ internal class ToastService : IToastService, IDisposable
             else
                 _notifier.HistoryRemove(tag);
         }
-        catch { }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
     internal void OnHandleDisposed(ToastHandle handle)

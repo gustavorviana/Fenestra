@@ -6,7 +6,7 @@ namespace Fenestra.Core;
 /// </summary>
 public class ToastProgressTracker
 {
-    private Action<Dictionary<string, string>>? _updateCallback;
+    private volatile Action<Dictionary<string, string>>? _updateCallback;
 
     /// <summary>
     /// The fixed title displayed above the progress bar. Null to omit.

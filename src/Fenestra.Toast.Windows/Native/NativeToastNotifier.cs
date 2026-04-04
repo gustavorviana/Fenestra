@@ -11,6 +11,7 @@ internal class NativeToastNotifier : IDisposable
 {
     private IntPtr _pNotifier;
     private IntPtr _pNotifier2;
+    private IntPtr _pToastNotifier; // cached QI for IToastNotifier
     private bool _disposed;
 
     public bool IsValid => _pNotifier != IntPtr.Zero;
@@ -34,6 +35,7 @@ internal class NativeToastNotifier : IDisposable
         }
         finally { Marshal.Release(pManager); }
 
+        TryQI(_pNotifier, IID_IToastNotifier, out _pToastNotifier);
         TryQI(_pNotifier, IID_IToastNotifier2, out _pNotifier2);
     }
 
@@ -41,56 +43,36 @@ internal class NativeToastNotifier : IDisposable
 
     public void Show(IntPtr pNotification)
     {
-        if (_pNotifier == IntPtr.Zero) throw new InvalidOperationException("Notifier not initialized.");
+        if (_pToastNotifier == IntPtr.Zero) throw new InvalidOperationException("IToastNotifier not available.");
         if (pNotification == IntPtr.Zero) throw new ArgumentException("Notification pointer is null.");
-
-        var pNotifier = QI(_pNotifier, IID_IToastNotifier);
-        if (pNotifier == IntPtr.Zero) throw new InvalidOperationException("QI for IToastNotifier failed.");
 
         var pNotif = QI(pNotification, IID_IToastNotification);
         if (pNotif == IntPtr.Zero)
-        {
-            Marshal.Release(pNotifier);
             throw new InvalidOperationException("QI for IToastNotification failed on notification object.");
-        }
 
         try
         {
-            var hr = WinRtToastInterop.CallWithPtr(pNotifier, Slot_Notifier_Show, pNotif);
+            var hr = WinRtToastInterop.CallWithPtr(_pToastNotifier, Slot_Notifier_Show, pNotif);
             if (hr < 0) throw new COMException($"IToastNotifier.Show failed. HRESULT=0x{hr:X8}", hr);
         }
-        finally
-        {
-            Marshal.Release(pNotif);
-            Marshal.Release(pNotifier);
-        }
+        finally { Marshal.Release(pNotif); }
     }
 
     public void Hide(IntPtr pNotification)
     {
-        if (_pNotifier == IntPtr.Zero) throw new InvalidOperationException("Notifier not initialized.");
+        if (_pToastNotifier == IntPtr.Zero) throw new InvalidOperationException("IToastNotifier not available.");
         if (pNotification == IntPtr.Zero) throw new ArgumentException("Notification pointer is null.");
-
-        var pNotifier = QI(_pNotifier, IID_IToastNotifier);
-        if (pNotifier == IntPtr.Zero) throw new InvalidOperationException("QI for IToastNotifier failed.");
 
         var pNotif = QI(pNotification, IID_IToastNotification);
         if (pNotif == IntPtr.Zero)
-        {
-            Marshal.Release(pNotifier);
             throw new InvalidOperationException("QI for IToastNotification failed.");
-        }
 
         try
         {
-            var hr = WinRtToastInterop.CallWithPtr(pNotifier, Slot_Notifier_Hide, pNotif);
+            var hr = WinRtToastInterop.CallWithPtr(_pToastNotifier, Slot_Notifier_Hide, pNotif);
             if (hr < 0) throw new COMException($"IToastNotifier.Hide failed. HRESULT=0x{hr:X8}", hr);
         }
-        finally
-        {
-            Marshal.Release(pNotif);
-            Marshal.Release(pNotifier);
-        }
+        finally { Marshal.Release(pNotif); }
     }
 
     // --- Create notification ---
@@ -320,6 +302,7 @@ internal class NativeToastNotifier : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        WinRtToastInterop.SafeRelease(ref _pToastNotifier);
         WinRtToastInterop.SafeRelease(ref _pNotifier2);
         WinRtToastInterop.SafeRelease(ref _pNotifier);
     }

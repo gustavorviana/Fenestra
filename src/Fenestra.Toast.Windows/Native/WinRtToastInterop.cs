@@ -62,6 +62,9 @@ internal static class WinRtToastInterop
     /// </summary>
     public static IntPtr GetVtableSlot(IntPtr pObj, int slot)
     {
+        if (pObj == IntPtr.Zero)
+            throw new ArgumentException("COM object pointer is null.", nameof(pObj));
+
         var vtable = Marshal.ReadIntPtr(pObj);
         return Marshal.ReadIntPtr(vtable, slot * IntPtr.Size);
     }
@@ -75,7 +78,7 @@ internal static class WinRtToastInterop
         var hArg = CreateHString(arg);
         try
         {
-            var fn = Marshal.GetDelegateForFunctionPointer<VtableHStringOutPtr>(GetVtableSlot(pObj, slot));
+            var fn = ComFactory.GetDelegate<VtableHStringOutPtr>(GetVtableSlot(pObj, slot));
             var hr = fn(pObj, hArg, out var result);
             return hr == 0 ? result : IntPtr.Zero;
         }
@@ -87,7 +90,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static int CallWithPtr(IntPtr pObj, int slot, IntPtr arg)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtablePtrVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtablePtrVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj, arg);
     }
 
@@ -99,7 +102,7 @@ internal static class WinRtToastInterop
         var h = CreateHString(value);
         try
         {
-            var fn = Marshal.GetDelegateForFunctionPointer<VtableHStringVoid>(GetVtableSlot(pObj, slot));
+            var fn = ComFactory.GetDelegate<VtableHStringVoid>(GetVtableSlot(pObj, slot));
             return fn(pObj, h);
         }
         finally { FreeHString(h); }
@@ -110,7 +113,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static int CallSetBool(IntPtr pObj, int slot, bool value)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableBoolVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableBoolVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj, value ? 1 : 0);
     }
 
@@ -119,7 +122,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static int CallSetInt(IntPtr pObj, int slot, int value)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableIntVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableIntVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj, value);
     }
 
@@ -128,7 +131,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static IntPtr CallGetPtr(IntPtr pObj, int slot)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableOutPtr>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableOutPtr>(GetVtableSlot(pObj, slot));
         var hr = fn(pObj, out var result);
         return hr == 0 ? result : IntPtr.Zero;
     }
@@ -138,7 +141,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static int CallGetInt(IntPtr pObj, int slot)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableOutInt>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableOutInt>(GetVtableSlot(pObj, slot));
         fn(pObj, out var result);
         return result;
     }
@@ -148,7 +151,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static string CallGetHString(IntPtr pObj, int slot)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableOutPtr>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableOutPtr>(GetVtableSlot(pObj, slot));
         fn(pObj, out var hResult);
         var str = ReadHString(hResult);
         FreeHString(hResult);
@@ -160,7 +163,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static long CallAddEvent(IntPtr pObj, int slot, IntPtr handler)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableAddEvent>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableAddEvent>(GetVtableSlot(pObj, slot));
         fn(pObj, handler, out var token);
         return token;
     }
@@ -170,7 +173,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static int CallSetUInt(IntPtr pObj, int slot, uint value)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableUIntVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableUIntVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj, value);
     }
 
@@ -183,7 +186,7 @@ internal static class WinRtToastInterop
         var hGroup = CreateHString(group);
         try
         {
-            var fn = Marshal.GetDelegateForFunctionPointer<VtablePtrHStringHString>(GetVtableSlot(pObj, slot));
+            var fn = ComFactory.GetDelegate<VtablePtrHStringHString>(GetVtableSlot(pObj, slot));
             return fn(pObj, data, hTag, hGroup);
         }
         finally
@@ -201,7 +204,7 @@ internal static class WinRtToastInterop
         var hTag = CreateHString(tag);
         try
         {
-            var fn = Marshal.GetDelegateForFunctionPointer<VtablePtrHString>(GetVtableSlot(pObj, slot));
+            var fn = ComFactory.GetDelegate<VtablePtrHString>(GetVtableSlot(pObj, slot));
             return fn(pObj, data, hTag);
         }
         finally { FreeHString(hTag); }
@@ -212,7 +215,7 @@ internal static class WinRtToastInterop
     /// </summary>
     public static int CallVoid(IntPtr pObj, int slot)
     {
-        var fn = Marshal.GetDelegateForFunctionPointer<VtableVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<VtableVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj);
     }
 
@@ -225,7 +228,7 @@ internal static class WinRtToastInterop
         var hB = CreateHString(b);
         try
         {
-            var fn = Marshal.GetDelegateForFunctionPointer<VtableHStringHString>(GetVtableSlot(pObj, slot));
+            var fn = ComFactory.GetDelegate<VtableHStringHString>(GetVtableSlot(pObj, slot));
             return fn(pObj, hA, hB);
         }
         finally { FreeHString(hA); FreeHString(hB); }
@@ -241,7 +244,7 @@ internal static class WinRtToastInterop
         var hC = CreateHString(c);
         try
         {
-            var fn = Marshal.GetDelegateForFunctionPointer<VtableHString3>(GetVtableSlot(pObj, slot));
+            var fn = ComFactory.GetDelegate<VtableHString3>(GetVtableSlot(pObj, slot));
             return fn(pObj, hA, hB, hC);
         }
         finally { FreeHString(hA); FreeHString(hB); FreeHString(hC); }
