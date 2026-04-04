@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Fenestra.Core\Fenestra.Core.csproj" />
+    <ProjectReference Include="..\Fenestra.Toast.Windows\Fenestra.Toast.Windows.csproj" />
   </ItemGroup>
 
   <ItemGroup>
