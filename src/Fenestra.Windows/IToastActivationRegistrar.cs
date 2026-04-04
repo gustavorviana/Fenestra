@@ -2,18 +2,19 @@ namespace Fenestra.Windows;
 
 /// <summary>
 /// Registers the application for toast notification background activation.
-/// This enables toast actions to work even when the app is closed — Windows will relaunch it.
+/// This enables the app to receive activation callbacks when a toast is clicked,
+/// by registering a COM server in the registry and a runtime class factory.
 /// Call <see cref="Register"/> once at app startup and <see cref="Unregister"/> to clean up.
 /// </summary>
 public interface IToastActivationRegistrar
 {
     /// <summary>
-    /// Registers the COM server and Start Menu shortcut for toast background activation.
+    /// Registers the COM server in the registry and the runtime class factory.
     /// </summary>
     void Register();
 
     /// <summary>
-    /// Removes the COM server registration and Start Menu shortcut.
+    /// Removes the COM server registration and revokes the runtime class factory.
     /// </summary>
     void Unregister();
 

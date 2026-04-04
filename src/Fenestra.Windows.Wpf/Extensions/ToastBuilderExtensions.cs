@@ -29,17 +29,4 @@ public static class FenestraBuilderExtensions
         builder.Services.AddSingleton<IToastActivationRegistrar, ToastActivationRegistrar>();
         return builder;
     }
-
-    /// <summary>
-    /// Enables toast background activation with an explicit COM activator CLSID.
-    /// Use this overload when you need a stable, hardcoded GUID (recommended for production).
-    /// Generate one with <c>Guid.NewGuid()</c> and never change it once deployed.
-    /// Requires <see cref="UseToastNotifications"/> to be called first.
-    /// </summary>
-    public static FenestraBuilder UseToastActivation(this FenestraBuilder builder, Guid activatorClsid)
-    {
-        builder.Services.AddSingleton(new ToastActivationOptions { ActivatorClsid = activatorClsid });
-        builder.Services.AddSingleton<IToastActivationRegistrar, ToastActivationRegistrar>();
-        return builder;
-    }
 }

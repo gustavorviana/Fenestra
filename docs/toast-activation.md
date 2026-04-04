@@ -107,6 +107,17 @@ public class MainWindow : Window
 }
 ```
 
+## Important: CLSID and the Start Menu Shortcut
+
+Once `UseToastActivation()` writes the `ToastActivatorCLSID` to the Start Menu shortcut, Windows routes all toast activations through COM for that AUMID. If the CLSID changes or `UseToastActivation()` is removed without updating the shortcut, the old shortcut still references the stale CLSID and **all WinRT toast events (Activated, Dismissed) will stop firing** -- not just background activation, but in-app events too.
+
+The shortcut lives at:
+```
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\{AppName}.lnk
+```
+
+If you change the CLSID or remove `UseToastActivation()`, you must also update or recreate the shortcut so the old CLSID is cleared.
+
 ## How It Works
 
 ### Registration Flow (on startup)

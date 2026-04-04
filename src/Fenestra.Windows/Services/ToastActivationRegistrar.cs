@@ -2,8 +2,6 @@ using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Windows.Native;
 using Fenestra.Windows.Native.Toast;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace Fenestra.Windows.Services;
 
@@ -23,23 +21,21 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
     private readonly IThreadContext _threadContext;
     private readonly IApplicationActivator? _activator;
     private readonly Guid _clsid;
-    private readonly string _shortcutPath;
     private readonly string _exePath;
+    private readonly string _shortcutPath;
     private bool _registered;
 
     /// <inheritdoc />
     public bool IsRegistered => _registered;
 
-    public ToastActivationRegistrar(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null, ToastActivationOptions? options = null)
+    public ToastActivationRegistrar(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null)
     {
         _appInfo = appInfo;
         _threadContext = threadContext;
         _activator = activator;
-        _clsid = options?.ActivatorClsid is { } guid && guid != Guid.Empty
-            ? guid
-            : GenerateActivatorClsid(appInfo.AppId);
+        _clsid = appInfo.AppGuid;
         _exePath = WindowsNotificationRegistrationManager.GetCurrentExecutablePath();
-        _shortcutPath = System.IO.Path.Combine(
+        _shortcutPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             @"Microsoft\Windows\Start Menu\Programs",
             $"{appInfo.AppName}.lnk");
@@ -51,20 +47,16 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
         if (_registered) return;
         Platform.EnsureWindows10();
 
-        try
+        RegisterComServerInRegistry();
+        EnsureShortcutHasClsid();
+
+        NotificationActivatorServer.Register(_clsid, (_, _) =>
         {
-            RegisterComServerInRegistry();
-            EnsureShortcutHasClsid();
+            try { _ = _threadContext.InvokeAsync(() => _activator?.BringToForeground()); }
+            catch { }
+        });
 
-            NotificationActivatorServer.Register(_clsid, (_, _) =>
-            {
-                try { _ = _threadContext.InvokeAsync(() => _activator?.BringToForeground()); }
-                catch { }
-            });
-
-            _registered = true;
-        }
-        catch { }
+        _registered = true;
     }
 
     /// <inheritdoc />
@@ -96,22 +88,15 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
 
     private void EnsureShortcutHasClsid()
     {
+        var workingDir = Path.GetDirectoryName(_exePath) ?? AppDomain.CurrentDomain.BaseDirectory;
+
         using var link = ShellLink.Create(_shortcutPath);
+        link.TargetPath = _exePath;
+        link.WorkingDirectory = workingDir;
+        link.Description = _appInfo.AppName;
+        link.SetIconLocation(_exePath);
+        link.AppUserModelId = _appInfo.AppId;
         link.ToastActivatorClsid = _clsid;
         link.Save();
-    }
-
-    /// <summary>
-    /// Generates a deterministic GUID from the AppId so the CLSID is stable across restarts.
-    /// </summary>
-    private static Guid GenerateActivatorClsid(string appId)
-    {
-        using var sha = SHA256.Create();
-        var hash = sha.ComputeHash(Encoding.UTF8.GetBytes("Fenestra.ToastActivator:" + appId));
-        var bytes = new byte[16];
-        Array.Copy(hash, bytes, 16);
-        bytes[6] = (byte)((bytes[6] & 0x0F) | 0x50); // UUID version 5
-        bytes[8] = (byte)((bytes[8] & 0x3F) | 0x80); // UUID variant 1
-        return new Guid(bytes);
     }
 }
