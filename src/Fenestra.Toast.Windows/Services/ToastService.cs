@@ -120,60 +120,39 @@ internal class ToastService : IToastService, IDisposable
         var useBindings = toast.ProgressTracker != null;
         var xml = ToastXmlBuilder.Build(toast, useBindings);
 
-        var pXmlDoc = _notifier!.CreateXmlDocument(xml);
-        if (pXmlDoc == IntPtr.Zero) return;
+        using var pXmlDoc = _notifier!.CreateXmlDocument(xml);
+        using var pNotif = _notifier.CreateNotification(pXmlDoc);
 
-        IntPtr pNotif;
-        try
+        if (!string.IsNullOrEmpty(toast.Tag))
+            _notifier.SetTag(pNotif, toast.Tag!);
+        if (!string.IsNullOrEmpty(toast.Group))
+            _notifier.SetGroup(pNotif, toast.Group!);
+        if (toast.SuppressPopup)
+            _notifier.SetSuppressPopup(pNotif, true);
+        if (toast.Priority != ToastPriority.Default)
+            _notifier.SetPriority(pNotif, (int)toast.Priority);
+        if (toast.ExpiresOnReboot)
+            _notifier.SetExpiresOnReboot(pNotif, true);
+
+        _notifier.Show(pNotif);
+
+        if (toast.ProgressTracker != null)
         {
-            pNotif = _notifier.CreateNotification(pXmlDoc);
-            if (pNotif == IntPtr.Zero) return;
-        }
-        catch
-        {
-            Marshal.Release(pXmlDoc);
-            throw;
-        }
+            var tag = toast.Tag!;
+            var group = toast.Group;
+            var tracker = toast.ProgressTracker;
+            tracker.Bind(data => UpdateInternal(tag, data, 0, group));
 
-        try
-        {
-            if (!string.IsNullOrEmpty(toast.Tag))
-                _notifier.SetTag(pNotif, toast.Tag!);
-            if (!string.IsNullOrEmpty(toast.Group))
-                _notifier.SetGroup(pNotif, toast.Group!);
-            if (toast.SuppressPopup)
-                _notifier.SetSuppressPopup(pNotif, true);
-            if (toast.Priority != ToastPriority.Default)
-                _notifier.SetPriority(pNotif, (int)toast.Priority);
-            if (toast.ExpiresOnReboot)
-                _notifier.SetExpiresOnReboot(pNotif, true);
-
-            _notifier.Show(pNotif);
-
-            if (toast.ProgressTracker != null)
+            var initial = new Dictionary<string, string>
             {
-                var tag = toast.Tag!;
-                var group = toast.Group;
-                var tracker = toast.ProgressTracker;
-                tracker.Bind(data => UpdateInternal(tag, data, 0, group));
-
-                // Send initial data so bindings have values immediately
-                var initial = new Dictionary<string, string>
-                {
-                    ["progressStatus"] = " ",
-                    ["progressValue"] = toast.ProgressTracker.Value.ToString()
-                };
-                if (tracker.Title != null)
-                    initial["progressTitle"] = tracker.Title;
-                if (tracker.UseValueOverride)
-                    initial["progressValueOverride"] = "0%";
-                UpdateInternal(tag, initial, 0, group);
-            }
-        }
-        finally
-        {
-            Marshal.Release(pNotif);
-            Marshal.Release(pXmlDoc);
+                ["progressStatus"] = " ",
+                ["progressValue"] = "0"
+            };
+            if (tracker.Title != null)
+                initial["progressTitle"] = tracker.Title;
+            if (tracker.UseValueOverride)
+                initial["progressValueOverride"] = "0%";
+            UpdateInternal(tag, initial, 0, group);
         }
     }
 

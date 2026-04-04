@@ -3,62 +3,44 @@ using System.Runtime.InteropServices;
 namespace Fenestra.Toast.Windows.Native;
 
 /// <summary>
-/// Pure P/Invoke and vtable-level WinRT COM interop. Everything is IntPtr — no COM interface casts.
-/// Uses GetDelegateForFunctionPointer to call vtable slots directly.
+/// Pure P/Invoke and vtable-level WinRT COM interop.
+/// Public API uses <see cref="ComPointerHandle"/> and <see cref="HStringHandle"/> for safe lifecycle.
+/// Vtable delegates use raw IntPtr — SafeHandle cannot be used in native function pointer delegates.
 /// </summary>
 internal static class WinRtToastInterop
 {
     // --- WinRT Activation ---
 
-    public static IntPtr ActivateInstance(string className)
+    /// <summary>Activates a WinRT class by name. Caller owns the returned handle.</summary>
+    public static ComPointerHandle? ActivateInstance(string className)
     {
-        WindowsCreateString(className, className.Length, out var hClass);
+        using var hClass = HStringHandle.Create(className);
         try
         {
             var hr = RoActivateInstance(hClass, out var instance);
-            return hr == 0 ? instance : IntPtr.Zero;
+            return hr == 0 && instance != IntPtr.Zero ? new ComPointerHandle(instance) : null;
         }
-        catch { return IntPtr.Zero; }
-        finally { WindowsDeleteString(hClass); }
+        catch { return null; }
     }
 
-    public static IntPtr GetActivationFactory(string className, Guid iid)
+    /// <summary>Gets an activation factory for a WinRT class. Caller owns the returned handle.</summary>
+    public static ComPointerHandle? GetActivationFactory(string className, Guid iid)
     {
-        WindowsCreateString(className, className.Length, out var hClass);
+        using var hClass = HStringHandle.Create(className);
         try
         {
             var hr = RoGetActivationFactory(hClass, ref iid, out var factory);
-            return hr == 0 ? factory : IntPtr.Zero;
+            return hr == 0 && factory != IntPtr.Zero ? new ComPointerHandle(factory) : null;
         }
-        catch { return IntPtr.Zero; }
-        finally { WindowsDeleteString(hClass); }
+        catch { return null; }
     }
 
-    // --- HSTRING helpers ---
-
-    public static IntPtr CreateHString(string value)
-    {
-        WindowsCreateString(value, value.Length, out var h);
-        return h;
-    }
-
-    public static string ReadHString(IntPtr hstring)
-    {
-        if (hstring == IntPtr.Zero) return "";
-        var buf = WindowsGetStringRawBuffer(hstring, out var len);
-        return buf == IntPtr.Zero ? "" : Marshal.PtrToStringUni(buf, len) ?? "";
-    }
-
-    public static void FreeHString(IntPtr hstring)
-    {
-        if (hstring != IntPtr.Zero) WindowsDeleteString(hstring);
-    }
-
-    // --- Vtable call helpers ---
+    // --- Vtable slot resolution ---
 
     /// <summary>
-    /// Gets a function pointer from a COM vtable at the given slot index.
-    /// WinRT interfaces: slots 0-2 = IUnknown, 3-5 = IInspectable, 6+ = interface methods.
+    /// Gets a raw function pointer from a COM vtable at the given slot index.
+    /// WinRT: slots 0-2 = IUnknown, 3-5 = IInspectable, 6+ = interface methods.
+    /// Returns IntPtr (not a COM object — do NOT wrap in ComPointerHandle).
     /// </summary>
     public static IntPtr GetVtableSlot(IntPtr pObj, int slot)
     {
@@ -69,266 +51,159 @@ internal static class WinRtToastInterop
         return Marshal.ReadIntPtr(vtable, slot * IntPtr.Size);
     }
 
-    /// <summary>
-    /// Calls a vtable method with signature: HRESULT Method(this, HSTRING arg, out IntPtr result).
-    /// Used for factory methods like CreateToastNotifierWithId.
-    /// </summary>
-    public static IntPtr CallWithHString(IntPtr pObj, int slot, string arg)
+    // --- Vtable call helpers (accept ComPointerHandle, extract IntPtr internally) ---
+
+    /// <summary>HRESULT Method(this, HSTRING, out IntPtr) — e.g. CreateToastNotifierWithId.</summary>
+    public static ComPointerHandle? CallWithHString(ComPointerHandle pObj, int slot, string arg)
     {
-        var hArg = CreateHString(arg);
-        try
-        {
-            var fn = ComFactory.GetDelegate<VtableHStringOutPtr>(GetVtableSlot(pObj, slot));
-            var hr = fn(pObj, hArg, out var result);
-            return hr == 0 ? result : IntPtr.Zero;
-        }
-        finally { FreeHString(hArg); }
+        var p = pObj.DangerousGetHandle();
+        using var hArg = HStringHandle.Create(arg);
+        var fn = ComFactory.GetDelegate<D_HStringOutPtr>(GetVtableSlot(p, slot));
+        var hr = fn(p, hArg.DangerousGetHandle(), out var result);
+        return hr == 0 && result != IntPtr.Zero ? new ComPointerHandle(result) : null;
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, IntPtr arg) — e.g. Show(notification), Hide(notification).
-    /// </summary>
+    /// <summary>HRESULT Method(this, IntPtr) — e.g. Show, Hide.</summary>
     public static int CallWithPtr(IntPtr pObj, int slot, IntPtr arg)
     {
-        var fn = ComFactory.GetDelegate<VtablePtrVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<D_PtrVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj, arg);
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, HSTRING arg) — e.g. put_Tag, put_Group, LoadXml.
-    /// </summary>
+    /// <summary>HRESULT Method(this, HSTRING) — e.g. put_Tag, LoadXml.</summary>
     public static int CallSetHString(IntPtr pObj, int slot, string value)
     {
-        var h = CreateHString(value);
-        try
-        {
-            var fn = ComFactory.GetDelegate<VtableHStringVoid>(GetVtableSlot(pObj, slot));
-            return fn(pObj, h);
-        }
-        finally { FreeHString(h); }
+        using var h = HStringHandle.Create(value);
+        var fn = ComFactory.GetDelegate<D_HStringVoid>(GetVtableSlot(pObj, slot));
+        return fn(pObj, h.DangerousGetHandle());
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, bool value) — e.g. put_SuppressPopup, put_ExpiresOnReboot.
-    /// </summary>
+    /// <summary>HRESULT Method(this, bool).</summary>
     public static int CallSetBool(IntPtr pObj, int slot, bool value)
     {
-        var fn = ComFactory.GetDelegate<VtableBoolVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<D_IntVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj, value ? 1 : 0);
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, int value) — e.g. put_Priority.
-    /// </summary>
+    /// <summary>HRESULT Method(this, int).</summary>
     public static int CallSetInt(IntPtr pObj, int slot, int value)
     {
-        var fn = ComFactory.GetDelegate<VtableIntVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<D_IntVoid>(GetVtableSlot(pObj, slot));
         return fn(pObj, value);
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, out IntPtr result) — e.g. get_Values, get_History.
-    /// </summary>
-    public static IntPtr CallGetPtr(IntPtr pObj, int slot)
+    /// <summary>HRESULT Method(this, uint).</summary>
+    public static int CallSetUInt(IntPtr pObj, int slot, uint value)
     {
-        var fn = ComFactory.GetDelegate<VtableOutPtr>(GetVtableSlot(pObj, slot));
-        var hr = fn(pObj, out var result);
-        return hr == 0 ? result : IntPtr.Zero;
+        var fn = ComFactory.GetDelegate<D_UIntVoid>(GetVtableSlot(pObj, slot));
+        return fn(pObj, value);
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, out int result).
-    /// </summary>
+    /// <summary>HRESULT Method(this, out IntPtr) — e.g. get_Values, get_History.</summary>
+    public static ComPointerHandle? CallGetPtr(IntPtr pObj, int slot)
+    {
+        var fn = ComFactory.GetDelegate<D_OutPtr>(GetVtableSlot(pObj, slot));
+        var hr = fn(pObj, out var result);
+        return hr == 0 && result != IntPtr.Zero ? new ComPointerHandle(result) : null;
+    }
+
+    /// <summary>HRESULT Method(this, out int).</summary>
     public static int CallGetInt(IntPtr pObj, int slot)
     {
-        var fn = ComFactory.GetDelegate<VtableOutInt>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<D_OutInt>(GetVtableSlot(pObj, slot));
         fn(pObj, out var result);
         return result;
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, out HSTRING result) and reads the string.
-    /// </summary>
-    public static string CallGetHString(IntPtr pObj, int slot)
-    {
-        var fn = ComFactory.GetDelegate<VtableOutPtr>(GetVtableSlot(pObj, slot));
-        fn(pObj, out var hResult);
-        var str = ReadHString(hResult);
-        FreeHString(hResult);
-        return str;
-    }
-
-    /// <summary>
-    /// Calls: HRESULT Method(this, IntPtr handler, out long token) — add event.
-    /// </summary>
+    /// <summary>HRESULT Method(this, IntPtr handler, out long token) — add event.</summary>
     public static long CallAddEvent(IntPtr pObj, int slot, IntPtr handler)
     {
-        var fn = ComFactory.GetDelegate<VtableAddEvent>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<D_AddEvent>(GetVtableSlot(pObj, slot));
         fn(pObj, handler, out var token);
         return token;
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, uint value) — e.g. put_SequenceNumber.
-    /// </summary>
-    public static int CallSetUInt(IntPtr pObj, int slot, uint value)
-    {
-        var fn = ComFactory.GetDelegate<VtableUIntVoid>(GetVtableSlot(pObj, slot));
-        return fn(pObj, value);
-    }
-
-    /// <summary>
-    /// Calls: HRESULT Method(this, IntPtr ptr, HSTRING a, HSTRING b) — UpdateWithTagAndGroup.
-    /// </summary>
+    /// <summary>HRESULT Method(this, IntPtr, HSTRING, HSTRING) — UpdateWithTagAndGroup.</summary>
     public static int CallUpdateTagGroup(IntPtr pObj, int slot, IntPtr data, string tag, string group)
     {
-        var hTag = CreateHString(tag);
-        var hGroup = CreateHString(group);
-        try
-        {
-            var fn = ComFactory.GetDelegate<VtablePtrHStringHString>(GetVtableSlot(pObj, slot));
-            return fn(pObj, data, hTag, hGroup);
-        }
-        finally
-        {
-            FreeHString(hTag);
-            FreeHString(hGroup);
-        }
+        using var hTag = HStringHandle.Create(tag);
+        using var hGroup = HStringHandle.Create(group);
+        var fn = ComFactory.GetDelegate<D_PtrHStringHString>(GetVtableSlot(pObj, slot));
+        return fn(pObj, data, hTag.DangerousGetHandle(), hGroup.DangerousGetHandle());
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, IntPtr ptr, HSTRING a) — UpdateWithTag.
-    /// </summary>
+    /// <summary>HRESULT Method(this, IntPtr, HSTRING) — UpdateWithTag.</summary>
     public static int CallUpdateTag(IntPtr pObj, int slot, IntPtr data, string tag)
     {
-        var hTag = CreateHString(tag);
-        try
-        {
-            var fn = ComFactory.GetDelegate<VtablePtrHString>(GetVtableSlot(pObj, slot));
-            return fn(pObj, data, hTag);
-        }
-        finally { FreeHString(hTag); }
+        using var hTag = HStringHandle.Create(tag);
+        var fn = ComFactory.GetDelegate<D_PtrHString>(GetVtableSlot(pObj, slot));
+        return fn(pObj, data, hTag.DangerousGetHandle());
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this) — e.g. Clear().
-    /// </summary>
+    /// <summary>HRESULT Method(this) — e.g. Clear().</summary>
     public static int CallVoid(IntPtr pObj, int slot)
     {
-        var fn = ComFactory.GetDelegate<VtableVoid>(GetVtableSlot(pObj, slot));
+        var fn = ComFactory.GetDelegate<D_Void>(GetVtableSlot(pObj, slot));
         return fn(pObj);
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, HSTRING a, HSTRING b) — e.g. RemoveGroupedTag.
-    /// </summary>
+    /// <summary>HRESULT Method(this, HSTRING, HSTRING).</summary>
     public static int CallHStringHString(IntPtr pObj, int slot, string a, string b)
     {
-        var hA = CreateHString(a);
-        var hB = CreateHString(b);
-        try
-        {
-            var fn = ComFactory.GetDelegate<VtableHStringHString>(GetVtableSlot(pObj, slot));
-            return fn(pObj, hA, hB);
-        }
-        finally { FreeHString(hA); FreeHString(hB); }
+        using var hA = HStringHandle.Create(a);
+        using var hB = HStringHandle.Create(b);
+        var fn = ComFactory.GetDelegate<D_HStringHString>(GetVtableSlot(pObj, slot));
+        return fn(pObj, hA.DangerousGetHandle(), hB.DangerousGetHandle());
     }
 
-    /// <summary>
-    /// Calls: HRESULT Method(this, HSTRING a, HSTRING b, HSTRING c).
-    /// </summary>
-    public static int CallHString3(IntPtr pObj, int slot, string a, string b, string c)
-    {
-        var hA = CreateHString(a);
-        var hB = CreateHString(b);
-        var hC = CreateHString(c);
-        try
-        {
-            var fn = ComFactory.GetDelegate<VtableHString3>(GetVtableSlot(pObj, slot));
-            return fn(pObj, hA, hB, hC);
-        }
-        finally { FreeHString(hA); FreeHString(hB); FreeHString(hC); }
-    }
-
-    /// <summary>
-    /// Throws a COMException if the HRESULT indicates failure.
-    /// </summary>
-    public static void ThrowOnFailure(int hr, string context)
-    {
-        if (hr < 0)
-            Marshal.ThrowExceptionForHR(hr, new IntPtr(-1));
-    }
-
-    // Safe release
-    public static void SafeRelease(ref IntPtr ptr)
-    {
-        if (ptr != IntPtr.Zero)
-        {
-            Marshal.Release(ptr);
-            ptr = IntPtr.Zero;
-        }
-    }
-
-    // --- Delegate signatures for vtable calls ---
+    // --- Native vtable delegate signatures (ALL IntPtr — SafeHandle not allowed here) ---
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableHStringOutPtr(IntPtr @this, IntPtr hstring, out IntPtr result);
+    internal delegate int D_HStringOutPtr(IntPtr @this, IntPtr hstring, out IntPtr result);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtablePtrVoid(IntPtr @this, IntPtr arg);
+    internal delegate int D_PtrVoid(IntPtr @this, IntPtr arg);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableHStringVoid(IntPtr @this, IntPtr hstring);
+    internal delegate int D_HStringVoid(IntPtr @this, IntPtr hstring);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableBoolVoid(IntPtr @this, int value);
+    internal delegate int D_IntVoid(IntPtr @this, int value);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableIntVoid(IntPtr @this, int value);
+    internal delegate int D_UIntVoid(IntPtr @this, uint value);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableUIntVoid(IntPtr @this, uint value);
+    internal delegate int D_OutPtr(IntPtr @this, out IntPtr result);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableOutPtr(IntPtr @this, out IntPtr result);
+    internal delegate int D_OutInt(IntPtr @this, out int result);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableOutInt(IntPtr @this, out int result);
+    internal delegate int D_AddEvent(IntPtr @this, IntPtr handler, out long token);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableAddEvent(IntPtr @this, IntPtr handler, out long token);
+    internal delegate int D_PtrHStringHString(IntPtr @this, IntPtr ptr, IntPtr h1, IntPtr h2);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtablePtrHStringHString(IntPtr @this, IntPtr ptr, IntPtr h1, IntPtr h2);
+    internal delegate int D_PtrHString(IntPtr @this, IntPtr ptr, IntPtr h1);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtablePtrHString(IntPtr @this, IntPtr ptr, IntPtr h1);
+    internal delegate int D_Void(IntPtr @this);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableVoid(IntPtr @this);
+    internal delegate int D_HStringHString(IntPtr @this, IntPtr h1, IntPtr h2);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableHStringHString(IntPtr @this, IntPtr h1, IntPtr h2);
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int VtableHString3(IntPtr @this, IntPtr h1, IntPtr h2, IntPtr h3);
+    internal delegate int D_HString3(IntPtr @this, IntPtr h1, IntPtr h2, IntPtr h3);
 
     // --- P/Invoke ---
 
     [DllImport("combase.dll")]
-    private static extern int RoActivateInstance(IntPtr activatableClassId, out IntPtr instance);
+    private static extern int RoActivateInstance(HStringHandle activatableClassId, out IntPtr instance);
 
     [DllImport("combase.dll")]
-    private static extern int RoGetActivationFactory(IntPtr activatableClassId, ref Guid iid, out IntPtr factory);
-
-    [DllImport("combase.dll", PreserveSig = false)]
-    internal static extern void WindowsCreateString([MarshalAs(UnmanagedType.LPWStr)] string sourceString, int length, out IntPtr hstring);
-
-    [DllImport("combase.dll", PreserveSig = false)]
-    internal static extern void WindowsDeleteString(IntPtr hstring);
-
-    [DllImport("combase.dll")]
-    private static extern IntPtr WindowsGetStringRawBuffer(IntPtr hstring, out int length);
+    private static extern int RoGetActivationFactory(HStringHandle activatableClassId, ref Guid iid, out IntPtr factory);
 
     [DllImport("shell32.dll", SetLastError = true)]
     internal static extern void SetCurrentProcessExplicitAppUserModelID([MarshalAs(UnmanagedType.LPWStr)] string appID);
