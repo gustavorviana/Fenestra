@@ -49,6 +49,7 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
     public void Register()
     {
         if (_registered) return;
+        Platform.EnsureWindows10();
 
         try
         {

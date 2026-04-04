@@ -3,20 +3,17 @@ using Fenestra.Core.Models;
 using Fenestra.Windows.Models;
 using Fenestra.Windows.Native;
 using Fenestra.Windows.Native.Toast;
-using System.Runtime.InteropServices;
 
 namespace Fenestra.Windows.Services;
 
 /// <summary>
-/// Displays Windows 10+ toast notifications. Falls back silently on unsupported OS versions.
+/// Displays Windows 10+ toast notifications.
 /// </summary>
 internal class ToastService : IToastService, IDisposable
 {
     private readonly string _appId;
-    private readonly bool _supported;
     private readonly IThreadContext _threadContext;
     private readonly IApplicationActivator? _activator;
-    private readonly IWindowsNotificationRegistrationManager? _registrationManager;
     private readonly List<ToastHandle> _active = new();
     private NativeToastNotifier? _notifier = null!;
     private bool _disposed;
@@ -28,19 +25,16 @@ internal class ToastService : IToastService, IDisposable
 
     public ToastService(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null, IWindowsNotificationRegistrationManager? registrationManager = null)
     {
+        Platform.EnsureWindows10();
+
         _appId = appInfo.AppId;
-        _supported = IsSupported();
         _threadContext = threadContext;
         _activator = activator;
-        _registrationManager = registrationManager;
 
-        if (_supported)
-        {
-            _registrationManager?.EnsureRegistered();
-            WinRtToastInterop.SetCurrentProcessExplicitAppUserModelID(_appId);
-            _notifier = new NativeToastNotifier(_appId);
-            if (!_notifier.IsValid) { _notifier.Dispose(); _notifier = null; }
-        }
+        registrationManager?.EnsureRegistered();
+        WinRtToastInterop.SetCurrentProcessExplicitAppUserModelID(_appId);
+        _notifier = new NativeToastNotifier(_appId);
+        if (!_notifier.IsValid) { _notifier.Dispose(); _notifier = null; }
     }
 
     public IToastHandle Show(ToastContent toast)
@@ -48,7 +42,7 @@ internal class ToastService : IToastService, IDisposable
         if (string.IsNullOrEmpty(toast.Tag))
             toast.Tag = $"toast-{Guid.NewGuid():N}";
 
-        if (!_supported || _notifier == null)
+        if (_notifier == null)
             return null!;
 
         using var pXmlDoc = new XmlToast(toast);
@@ -92,7 +86,7 @@ internal class ToastService : IToastService, IDisposable
 
     public void ClearHistory()
     {
-        if (!_supported || _notifier == null) return;
+        if (_notifier == null) return;
         try { _notifier.HistoryClearWithId(_appId); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
         lock (_active) _active.Clear();
@@ -114,12 +108,4 @@ internal class ToastService : IToastService, IDisposable
         lock (_active) _active.Remove(handle);
     }
 
-    private static bool IsSupported()
-    {
-#if NET6_0_OR_GREATER
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Environment.OSVersion.Version.Major >= 10;
-#else
-        return Environment.OSVersion.Version.Major >= 10;
-#endif
-    }
 }

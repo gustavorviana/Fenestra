@@ -17,6 +17,8 @@ public sealed class WindowsNotificationRegistrationManager : IWindowsNotificatio
 
     public void EnsureRegistered()
     {
+        Platform.EnsureWindows();
+
         if (HasPackageIdentity())
             return;
 
