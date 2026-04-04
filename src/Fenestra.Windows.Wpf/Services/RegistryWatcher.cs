@@ -1,6 +1,6 @@
-using System.Runtime.InteropServices;
 using Fenestra.Core;
 using Microsoft.Win32;
+using System.Runtime.InteropServices;
 
 namespace Fenestra.Wpf.Services;
 

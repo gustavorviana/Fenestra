@@ -1,7 +1,7 @@
-using System.Windows;
 using Fenestra.Core;
 using Fenestra.Core.Models;
 using Microsoft.Extensions.Logging;
+using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 

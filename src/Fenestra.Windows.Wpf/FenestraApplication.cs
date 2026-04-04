@@ -1,11 +1,11 @@
-using System.Reflection;
-using System.Windows;
-using System.Windows.Threading;
 using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Threading;
 
 namespace Fenestra.Wpf;
 

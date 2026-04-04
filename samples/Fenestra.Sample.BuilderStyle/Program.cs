@@ -1,5 +1,5 @@
-using Fenestra.Wpf;
 using Fenestra.Sample.BuilderStyle;
+using Fenestra.Wpf;
 
 var builder = FenestraApplication.CreateBuilder(args);
 builder.UseMainWindow<MainWindow>();

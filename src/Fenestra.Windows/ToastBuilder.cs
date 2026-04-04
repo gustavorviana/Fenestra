@@ -369,7 +369,12 @@ public class ToastSubgroupBuilder
     {
         _subgroup.Texts.Add(new ToastText
         {
-            Text = text, Style = style, Wrap = wrap, MaxLines = maxLines, MinLines = minLines, Align = align
+            Text = text,
+            Style = style,
+            Wrap = wrap,
+            MaxLines = maxLines,
+            MinLines = minLines,
+            Align = align
         });
         return this;
     }
@@ -379,7 +384,10 @@ public class ToastSubgroupBuilder
     {
         _subgroup.Images.Add(new ToastImage
         {
-            Source = source, AltText = alt, Crop = crop, HintOverlay = hintOverlay
+            Source = source,
+            AltText = alt,
+            Crop = crop,
+            HintOverlay = hintOverlay
         });
         return this;
     }

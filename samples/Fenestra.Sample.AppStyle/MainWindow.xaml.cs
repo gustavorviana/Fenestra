@@ -4,7 +4,6 @@ using Fenestra.Windows;
 using Fenestra.Windows.Models;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace Fenestra.Sample.AppStyle;
 

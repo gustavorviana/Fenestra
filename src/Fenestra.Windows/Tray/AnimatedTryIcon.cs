@@ -1,4 +1,3 @@
-using Fenestra.Core;
 using Fenestra.Windows.Native;
 
 namespace Fenestra.Windows.Tray;

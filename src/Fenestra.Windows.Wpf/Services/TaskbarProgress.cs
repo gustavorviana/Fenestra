@@ -1,7 +1,7 @@
-using System.Windows;
-using System.Windows.Shell;
 using Fenestra.Windows;
 using Fenestra.Windows.Models;
+using System.Windows;
+using System.Windows.Shell;
 
 namespace Fenestra.Wpf.Services;
 

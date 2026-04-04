@@ -1,16 +1,16 @@
+using Fenestra.Core;
+using Fenestra.Windows;
+using Fenestra.Windows.Models;
+using Fenestra.Windows.Tray;
+using Fenestra.Wpf;
+using Fenestra.Wpf.Tray;
+using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using Fenestra.Core;
-using Fenestra.Windows.Models;
-using Fenestra.Windows.Tray;
-using Fenestra.Wpf;
-using Fenestra.Windows;
-using Fenestra.Wpf.Tray;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Fenestra.Sample.AppStyle;
 

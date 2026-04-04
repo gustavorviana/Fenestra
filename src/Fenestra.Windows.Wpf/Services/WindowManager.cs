@@ -1,6 +1,6 @@
-using System.Windows;
 using Fenestra.Core;
 using Fenestra.Core.Exceptions;
+using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 

@@ -1,14 +1,21 @@
-using System.Text;
-using System.Windows;
 using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Wpf.Native;
 using Microsoft.Win32;
+using System.Text;
+using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 
 internal class DialogService : IDialogService
 {
+    private readonly AppInfo _appInfo;
+
+    public DialogService(AppInfo appInfo)
+    {
+        _appInfo = appInfo;
+    }
+
     public FenestraMessageResult ShowMessage(
         string message,
         string? title = null,
@@ -18,7 +25,7 @@ internal class DialogService : IDialogService
     {
         var wpfResult = MessageBox.Show(
             message,
-            title ?? string.Empty,
+            title ?? _appInfo.AppName ?? string.Empty,
             ToWpfButton(buttons),
             ToWpfIcon(icon),
             ToWpfResult(defaultResult));

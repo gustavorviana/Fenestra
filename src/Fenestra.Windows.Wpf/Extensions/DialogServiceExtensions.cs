@@ -1,7 +1,6 @@
-using System.Windows;
-using System.Windows.Threading;
 using Fenestra.Core;
 using Fenestra.Core.Models;
+using System.Windows;
 
 namespace Fenestra.Wpf.Extensions;
 

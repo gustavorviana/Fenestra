@@ -1,8 +1,8 @@
-using System.Windows;
 using Fenestra.Core;
 using Fenestra.Windows;
 using Fenestra.Windows.Models;
 using Microsoft.Win32;
+using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 

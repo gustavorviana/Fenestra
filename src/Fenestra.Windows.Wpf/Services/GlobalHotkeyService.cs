@@ -1,7 +1,7 @@
-using System.Windows.Interop;
 using Fenestra.Windows;
 using Fenestra.Windows.Models;
 using Fenestra.Wpf.Native;
+using System.Windows.Interop;
 
 namespace Fenestra.Wpf.Services;
 

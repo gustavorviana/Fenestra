@@ -1,4 +1,3 @@
-using Fenestra.Core.Drawing;
 using Fenestra.Windows.Tray;
 using Fenestra.Wpf.Extensions;
 using System.Windows;

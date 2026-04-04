@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 
 namespace Fenestra.Windows.Native;
@@ -79,12 +78,6 @@ internal static class ShellNativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     internal static extern uint RegisterWindowMessage(string lpString);
 
-    [DllImport("user32.dll")]
-    internal static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    internal static extern bool GetCursorPos(out POINT lpPoint);
-
     // Icon
     [DllImport("user32.dll")]
     internal static extern bool DestroyIcon(IntPtr hIcon);
@@ -98,5 +91,4 @@ internal static class ShellNativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern IntPtr CreateIconFromResourceEx(
         byte[] presbits, int dwResSize, bool fIcon, int dwVer, int cxDesired, int cyDesired, int flags);
-
 }

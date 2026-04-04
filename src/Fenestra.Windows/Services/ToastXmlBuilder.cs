@@ -1,6 +1,6 @@
+using Fenestra.Windows.Models;
 using System.Globalization;
 using System.Text;
-using Fenestra.Windows.Models;
 
 namespace Fenestra.Windows.Services;
 

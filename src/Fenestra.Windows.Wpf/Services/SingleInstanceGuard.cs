@@ -1,9 +1,9 @@
+using Fenestra.Core;
+using Fenestra.Core.Models;
 using System.IO;
 using System.IO.Pipes;
 using System.Text;
 using System.Windows;
-using Fenestra.Core;
-using Fenestra.Core.Models;
 
 namespace Fenestra.Wpf.Services;
 

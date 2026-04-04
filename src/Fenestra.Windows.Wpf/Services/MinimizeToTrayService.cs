@@ -1,7 +1,7 @@
-using System.ComponentModel;
-using System.Windows;
 using Fenestra.Core;
 using Fenestra.Windows;
+using System.ComponentModel;
+using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 

@@ -1,7 +1,7 @@
-using System.Runtime.InteropServices;
-using System.Text;
 using Fenestra.Windows.Native.Interfaces;
 using Fenestra.Windows.Native.Structs;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Fenestra.Windows.Native;
 

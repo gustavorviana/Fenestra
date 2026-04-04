@@ -1,9 +1,8 @@
-using System.Windows;
 using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Windows;
 using Fenestra.Windows.Models;
-using Microsoft.Extensions.DependencyInjection;
+using System.Windows;
 
 namespace Fenestra.Sample.BuilderStyle;
 

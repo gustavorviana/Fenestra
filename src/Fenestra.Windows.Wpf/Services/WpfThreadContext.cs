@@ -1,5 +1,5 @@
-using System.Windows;
 using Fenestra.Core;
+using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 

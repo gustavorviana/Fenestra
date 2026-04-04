@@ -43,8 +43,9 @@ public class AppInfo
     {
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();
         var name = assembly.GetName();
+        var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product;
         return new AppInfo(
-            name.Name ?? "FenestraApp",
+            product ?? name.Name ?? "FenestraApp",
             name.Version ?? new Version(1, 0, 0));
     }
 

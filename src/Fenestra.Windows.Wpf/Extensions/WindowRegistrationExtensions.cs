@@ -1,6 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using System.Windows;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Fenestra.Wpf.Extensions;
 
