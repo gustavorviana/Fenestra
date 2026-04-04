@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Fenestra.Toast.Windows.Native;
+namespace Fenestra.Toast.Windows.Native.Toast;
 
 /// <summary>
 /// COM interop for toast notification background activation (relaunch when app is closed).

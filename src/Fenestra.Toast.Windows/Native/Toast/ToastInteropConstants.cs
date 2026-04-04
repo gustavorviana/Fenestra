@@ -1,4 +1,4 @@
-namespace Fenestra.Toast.Windows.Native;
+namespace Fenestra.Toast.Windows.Native.Toast;
 
 /// <summary>
 /// All COM GUIDs, vtable slot numbers, enum values, and HRESULT codes for Windows Toast Notifications.

@@ -1,7 +1,8 @@
-using System.Runtime.InteropServices;
 using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Toast.Windows.Native;
+using Fenestra.Toast.Windows.Native.Toast;
+using System.Runtime.InteropServices;
 
 namespace Fenestra.Toast.Windows.Services;
 
@@ -15,7 +16,7 @@ internal class ToastService : IToastService, IDisposable
     private readonly IThreadContext _threadContext;
     private readonly IWindowsNotificationRegistrationManager? _registrationManager;
     private readonly List<ToastHandle> _active = new();
-    private NativeToastNotifier? _notifier;
+    private NativeToastNotifier? _notifier = null!;
     private bool _disposed;
 
     public IReadOnlyList<IToastHandle> Active
@@ -44,13 +45,16 @@ internal class ToastService : IToastService, IDisposable
         if (string.IsNullOrEmpty(toast.Tag))
             toast.Tag = $"toast-{Guid.NewGuid():N}";
 
-        var handle = new ToastHandle(toast.Tag!, toast.Group, this);
+        if (!_supported || _notifier == null)
+            return null!;
+
+        using var pXmlDoc = new XmlToast(toast);
+        var internalHandle = pXmlDoc.CreateNotification(_notifier!);
+
+        var handle = new ToastHandle(this, internalHandle);
         lock (_active) _active.Add(handle);
 
-        if (!_supported || _notifier == null)
-            return handle;
-
-        ShowInternal(toast, handle);
+        internalHandle.Show(toast.ProgressTracker);
 
         return handle;
     }
@@ -81,79 +85,9 @@ internal class ToastService : IToastService, IDisposable
 
     // --- Internal (called by ToastHandle) ---
 
-    internal void UpdateInternal(string tag, Dictionary<string, string> data, uint sequenceNumber, string? group)
-    {
-        if (_notifier == null) return;
-        try { _notifier.Update(tag, group, data, sequenceNumber); }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
-    }
-
-    internal void ReplaceInternal(ToastContent toast, ToastHandle handle)
-    {
-        if (_notifier == null) return;
-        try { ShowInternal(toast, handle); }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
-    }
-
-    internal void RemoveInternal(string tag, string? group)
-    {
-        if (_notifier == null) return;
-        try
-        {
-            if (group != null)
-                _notifier.HistoryRemoveGrouped(tag, group);
-            else
-                _notifier.HistoryRemove(tag);
-        }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
-    }
-
     internal void OnHandleDisposed(ToastHandle handle)
     {
         lock (_active) _active.Remove(handle);
-    }
-
-    // --- Private ---
-
-    private void ShowInternal(ToastContent toast, ToastHandle handle)
-    {
-        var useBindings = toast.ProgressTracker != null;
-        var xml = ToastXmlBuilder.Build(toast, useBindings);
-
-        using var pXmlDoc = _notifier!.CreateXmlDocument(xml);
-        using var pNotif = _notifier.CreateNotification(pXmlDoc);
-
-        if (!string.IsNullOrEmpty(toast.Tag))
-            _notifier.SetTag(pNotif, toast.Tag!);
-        if (!string.IsNullOrEmpty(toast.Group))
-            _notifier.SetGroup(pNotif, toast.Group!);
-        if (toast.SuppressPopup)
-            _notifier.SetSuppressPopup(pNotif, true);
-        if (toast.Priority != ToastPriority.Default)
-            _notifier.SetPriority(pNotif, (int)toast.Priority);
-        if (toast.ExpiresOnReboot)
-            _notifier.SetExpiresOnReboot(pNotif, true);
-
-        _notifier.Show(pNotif);
-
-        if (toast.ProgressTracker != null)
-        {
-            var tag = toast.Tag!;
-            var group = toast.Group;
-            var tracker = toast.ProgressTracker;
-            tracker.Bind(data => UpdateInternal(tag, data, 0, group));
-
-            var initial = new Dictionary<string, string>
-            {
-                ["progressStatus"] = " ",
-                ["progressValue"] = "0"
-            };
-            if (tracker.Title != null)
-                initial["progressTitle"] = tracker.Title;
-            if (tracker.UseValueOverride)
-                initial["progressValueOverride"] = "0%";
-            UpdateInternal(tag, initial, 0, group);
-        }
     }
 
     private static bool IsSupported()

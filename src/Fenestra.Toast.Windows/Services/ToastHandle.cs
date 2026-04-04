@@ -8,27 +8,27 @@ namespace Fenestra.Toast.Windows.Services;
 /// </summary>
 internal class ToastHandle : IToastHandle
 {
-    private readonly ToastService _service;
+    private readonly InternalNotificationHandle _internalHandle;
+    private readonly ToastService _toastService;
 
-    public string Tag { get; }
-    public string? Group { get; }
+    public string Tag => _internalHandle.Tag ?? string.Empty;
+    public string? Group => _internalHandle.Group;
     public ToastHandleState State { get; private set; } = ToastHandleState.Active;
 
     public event EventHandler<ToastActivatedArgs>? Activated;
     public event EventHandler<ToastDismissalReason>? Dismissed;
     public event EventHandler<int>? Failed;
 
-    internal ToastHandle(string tag, string? group, ToastService service)
+    internal ToastHandle(ToastService toastService, InternalNotificationHandle internalHandle)
     {
-        Tag = tag;
-        Group = group;
-        _service = service;
+        _toastService = toastService;
+        _internalHandle = internalHandle;
     }
 
-    public void Update(Dictionary<string, string> data, uint sequenceNumber = 0)
+    public void Update(Dictionary<string, string> data)
     {
         if (State != ToastHandleState.Active) return;
-        _service.UpdateInternal(Tag, data, sequenceNumber, Group);
+        _internalHandle.Update(data);
     }
 
     public void Update(Action<ToastBuilder> configure)
@@ -40,23 +40,24 @@ internal class ToastHandle : IToastHandle
         var content = builder.Build();
         content.Tag = Tag;
         content.Group = Group;
-        _service.ReplaceInternal(content, this);
+
+        _internalHandle.ReplaceInternal(content);
     }
 
     public void Hide()
     {
         if (State != ToastHandleState.Active) return;
         State = ToastHandleState.Removed;
-        _service.RemoveInternal(Tag, Group);
-        _service.OnHandleDisposed(this);
+        _internalHandle.RemoveInternal(Tag, Group);
+        _toastService.OnHandleDisposed(this);
     }
 
     public void Remove()
     {
         if (State != ToastHandleState.Active) return;
         State = ToastHandleState.Removed;
-        _service.RemoveInternal(Tag, Group);
-        _service.OnHandleDisposed(this);
+        _internalHandle.RemoveInternal(Tag, Group);
+        _toastService.OnHandleDisposed(this);
     }
 
     public void Dispose()
@@ -71,13 +72,13 @@ internal class ToastHandle : IToastHandle
     {
         State = ToastHandleState.Dismissed;
         Dismissed?.Invoke(this, reason);
-        _service.OnHandleDisposed(this);
+        _toastService.OnHandleDisposed(this);
     }
 
     internal void RaiseFailed(int errorCode)
     {
         State = ToastHandleState.Failed;
         Failed?.Invoke(this, errorCode);
-        _service.OnHandleDisposed(this);
+        _toastService.OnHandleDisposed(this);
     }
 }

@@ -25,7 +25,7 @@ public interface IToastHandle : IDisposable
     /// <summary>
     /// Updates the data bindings of this toast (for progress bars).
     /// </summary>
-    void Update(Dictionary<string, string> data, uint sequenceNumber = 0);
+    void Update(Dictionary<string, string> data);
 
     /// <summary>
     /// Replaces the toast content by rebuilding it via the builder (keeps the same tag/group).

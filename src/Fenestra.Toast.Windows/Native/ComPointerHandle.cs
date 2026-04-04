@@ -22,14 +22,6 @@ internal sealed class ComPointerHandle : SafeHandleZeroOrMinusOneIsInvalid
     }
 
     /// <summary>
-    /// Wraps a raw COM pointer. Takes ownership — the pointer will be released on dispose.
-    /// </summary>
-    public static ComPointerHandle Wrap(IntPtr ptr)
-    {
-        return new ComPointerHandle(ptr);
-    }
-
-    /// <summary>
     /// QueryInterface on the underlying pointer. The returned handle owns the new reference.
     /// Returns null if QI fails.
     /// </summary>

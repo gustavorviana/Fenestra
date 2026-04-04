@@ -1,7 +1,7 @@
 using System.IO;
 using Fenestra.Core;
 using Fenestra.Core.Models;
-using Fenestra.Toast.Windows.Native;
+using Fenestra.Toast.Windows.Native.Toast;
 
 namespace Fenestra.Toast.Windows.Services;
 
