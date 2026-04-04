@@ -15,6 +15,7 @@ public static class FenestraBuilderExtensions
     /// </summary>
     public static FenestraBuilder UseToastNotifications(this FenestraBuilder builder)
     {
+        builder.Services.AddSingleton<IWindowsNotificationRegistrationManager, WindowsNotificationRegistrationManager>();
         builder.Services.AddSingleton<IToastService, ToastService>();
         return builder;
     }

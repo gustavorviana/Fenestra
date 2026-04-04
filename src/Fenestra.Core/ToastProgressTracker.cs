@@ -7,14 +7,36 @@ namespace Fenestra.Core;
 public class ToastProgressTracker
 {
     private Action<Dictionary<string, string>>? _updateCallback;
-    private uint _sequenceNumber;
+
+    /// <summary>
+    /// The fixed title displayed above the progress bar. Null to omit.
+    /// </summary>
+    public string? Title { get; }
+
+    public double Value { get; private set; }
+
+    /// <summary>
+    /// Whether to include the value override binding (custom text instead of percentage).
+    /// </summary>
+    public bool UseValueOverride { get; }
+
+    /// <summary>
+    /// Creates a progress tracker with optional title and value override support.
+    /// </summary>
+    /// <param name="title">Fixed title displayed above the progress bar. Null to omit.</param>
+    /// <param name="useValueOverride">Whether to enable custom text instead of the default percentage display.</param>
+    public ToastProgressTracker(string? title = null, bool useValueOverride = false)
+    {
+        Title = title;
+        UseValueOverride = useValueOverride;
+    }
 
     /// <summary>
     /// Reports progress value only (0.0 to 1.0).
     /// </summary>
     public void Report(double value)
     {
-        SendUpdate(value, null, null, null);
+        SendUpdate(value, null, null);
     }
 
     /// <summary>
@@ -22,7 +44,7 @@ public class ToastProgressTracker
     /// </summary>
     public void Report(string status)
     {
-        SendUpdate(null, status, null, null);
+        SendUpdate(null, status, null);
     }
 
     /// <summary>
@@ -30,15 +52,15 @@ public class ToastProgressTracker
     /// </summary>
     public void Report(double value, string status)
     {
-        SendUpdate(value, status, null, null);
+        SendUpdate(value, status, null);
     }
 
     /// <summary>
-    /// Reports progress with all fields.
+    /// Reports progress value, status text, and optional value override.
     /// </summary>
-    public void Report(double value, string status, string? title = null, string? valueOverride = null)
+    public void Report(double value, string status, string? valueOverride)
     {
-        SendUpdate(value, status, title, valueOverride);
+        SendUpdate(value, status, valueOverride);
     }
 
     internal void Bind(Action<Dictionary<string, string>> updateCallback)
@@ -46,20 +68,25 @@ public class ToastProgressTracker
         _updateCallback = updateCallback;
     }
 
-    private void SendUpdate(double? value, string? status, string? title, string? valueOverride)
+    private void SendUpdate(double? value, string? status, string? valueOverride)
     {
+        if (value != null)
+            Value = value.Value;
+
         if (_updateCallback == null) return;
 
-        _sequenceNumber++;
         var data = new Dictionary<string, string>();
 
         if (value.HasValue)
             data["progressValue"] = value.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-        if (status != null)
-            data["progressStatus"] = status;
-        if (title != null)
-            data["progressTitle"] = title;
-        if (valueOverride != null)
+
+        if (!string.IsNullOrEmpty(status))
+            data["progressStatus"] = status!;
+
+        if (!string.IsNullOrEmpty(Title))
+            data["progressTitle"] = Title!;
+
+        if (valueOverride != null && UseValueOverride)
             data["progressValueOverride"] = valueOverride;
 
         _updateCallback(data);

@@ -8,10 +8,9 @@ public class AppInfoTests
     public void Constructor_SetsAllProperties()
     {
         var version = new Version(2, 1, 0);
-        var info = new AppInfo("TestApp", version, "HOST01");
+        var info = new AppInfo("TestApp", version);
 
         Assert.Equal("TestApp", info.AppName);
         Assert.Equal(version, info.Version);
-        Assert.Equal("HOST01", info.HostName);
     }
 }

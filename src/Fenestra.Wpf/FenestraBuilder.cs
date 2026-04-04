@@ -65,7 +65,7 @@ public class FenestraBuilder
     {
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();
         var version = assembly.GetName().Version ?? new Version(1, 0, 0);
-        _appInfo = new AppInfo(appName, version, System.Environment.MachineName);
+        _appInfo = new AppInfo(appName, version);
         return this;
     }
 
@@ -74,7 +74,7 @@ public class FenestraBuilder
     /// </summary>
     public FenestraBuilder UseAppInfo(string appName, Version version)
     {
-        _appInfo = new AppInfo(appName, version, System.Environment.MachineName);
+        _appInfo = new AppInfo(appName, version);
         return this;
     }
 
@@ -328,7 +328,6 @@ public class FenestraBuilder
         var name = assembly.GetName();
         return new AppInfo(
             name.Name ?? "FenestraApp",
-            name.Version ?? new Version(1, 0, 0),
-            System.Environment.MachineName);
+            name.Version ?? new Version(1, 0, 0));
     }
 }

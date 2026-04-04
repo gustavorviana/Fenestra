@@ -94,11 +94,14 @@ internal static class ToastXmlBuilder
         {
             if (useProgressBindings)
             {
+                var tracker = content.ProgressTracker;
                 sb.Append("<progress");
-                sb.Append(" title=\"{progressTitle}\"");
                 sb.Append(" status=\"{progressStatus}\"");
                 sb.Append(" value=\"{progressValue}\"");
-                sb.Append(" valueStringOverride=\"{progressValueOverride}\"");
+                if (!string.IsNullOrEmpty(tracker?.Title))
+                    sb.Append(" title=\"{progressTitle}\"");
+                if (tracker?.UseValueOverride == true)
+                    sb.Append(" valueStringOverride=\"{progressValueOverride}\"");
                 sb.Append("/>");
             }
             else

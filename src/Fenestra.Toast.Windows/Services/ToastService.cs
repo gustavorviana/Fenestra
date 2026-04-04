@@ -13,28 +13,29 @@ internal class ToastService : IToastService, IDisposable
     private readonly string _appId;
     private readonly bool _supported;
     private readonly IThreadContext _threadContext;
+    private readonly IWindowsNotificationRegistrationManager? _registrationManager;
     private readonly List<ToastHandle> _active = new();
-    private object? _notifier;
+    private NativeToastNotifier? _notifier;
     private bool _disposed;
 
     public IReadOnlyList<IToastHandle> Active
     {
-        get
-        {
-            lock (_active) return _active.ToArray();
-        }
+        get { lock (_active) return _active.ToArray(); }
     }
 
-    public ToastService(AppInfo appInfo, IThreadContext threadContext)
+    public ToastService(AppInfo appInfo, IThreadContext threadContext, IWindowsNotificationRegistrationManager? registrationManager = null)
     {
         _appId = appInfo.AppId;
         _supported = IsSupported();
         _threadContext = threadContext;
+        _registrationManager = registrationManager;
 
         if (_supported)
         {
+            _registrationManager?.EnsureRegistered();
             WinRtToastInterop.SetCurrentProcessExplicitAppUserModelID(_appId);
-            _notifier = WinRtToastInterop.CreateNotifier(_appId);
+            _notifier = new NativeToastNotifier(_appId);
+            if (!_notifier.IsValid) { _notifier.Dispose(); _notifier = null; }
         }
     }
 
@@ -49,11 +50,7 @@ internal class ToastService : IToastService, IDisposable
         if (!_supported || _notifier == null)
             return handle;
 
-        try
-        {
-            ShowInternal(toast, handle);
-        }
-        catch { }
+        ShowInternal(toast, handle);
 
         return handle;
     }
@@ -67,15 +64,9 @@ internal class ToastService : IToastService, IDisposable
 
     public void ClearHistory()
     {
-        if (!_supported) return;
-        try
-        {
-            var history = WinRtToastInterop.GetHistory();
-            if (history != null)
-                WinRtToastInterop.HistoryClearWithId(history, _appId);
-        }
+        if (!_supported || _notifier == null) return;
+        try { _notifier.HistoryClearWithId(_appId); }
         catch { }
-
         lock (_active) _active.Clear();
     }
 
@@ -83,50 +74,36 @@ internal class ToastService : IToastService, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _notifier?.Dispose();
         _notifier = null;
         lock (_active) _active.Clear();
     }
 
-    // --- Internal methods called by ToastHandle ---
+    // --- Internal (called by ToastHandle) ---
 
     internal void UpdateInternal(string tag, Dictionary<string, string> data, uint sequenceNumber, string? group)
     {
-        if (!_supported || _notifier == null) return;
-        try
-        {
-            var notificationData = WinRtToastInterop.CreateNotificationData(sequenceNumber);
-            if (notificationData == null) return;
-
-            foreach (var kv in data)
-                WinRtToastInterop.SetNotificationDataValue(notificationData, kv.Key, kv.Value);
-
-            WinRtToastInterop.UpdateNotification(_notifier, notificationData, tag, group);
-        }
+        if (_notifier == null) return;
+        try { _notifier.Update(tag, group, data, sequenceNumber); }
         catch { }
     }
 
     internal void ReplaceInternal(ToastContent toast, ToastHandle handle)
     {
-        if (!_supported || _notifier == null) return;
-        try
-        {
-            ShowInternal(toast, handle);
-        }
+        if (_notifier == null) return;
+        try { ShowInternal(toast, handle); }
         catch { }
     }
 
     internal void RemoveInternal(string tag, string? group)
     {
-        if (!_supported) return;
+        if (_notifier == null) return;
         try
         {
-            var history = WinRtToastInterop.GetHistory();
-            if (history == null) return;
-
             if (group != null)
-                WinRtToastInterop.HistoryRemoveGrouped(history, tag, group);
+                _notifier.HistoryRemoveGrouped(tag, group);
             else
-                WinRtToastInterop.HistoryRemove(history, tag);
+                _notifier.HistoryRemove(tag);
         }
         catch { }
     }
@@ -142,46 +119,63 @@ internal class ToastService : IToastService, IDisposable
     {
         var useBindings = toast.ProgressTracker != null;
         var xml = ToastXmlBuilder.Build(toast, useBindings);
-        var xmlDoc = WinRtToastInterop.CreateXmlDocument(xml);
-        if (xmlDoc == null) return;
 
-        var notification = WinRtToastInterop.CreateNotification(xmlDoc);
-        if (notification == null) return;
+        var pXmlDoc = _notifier!.CreateXmlDocument(xml);
+        if (pXmlDoc == IntPtr.Zero) return;
 
-        if (!string.IsNullOrEmpty(toast.Tag))
-            WinRtToastInterop.SetTag(notification, toast.Tag!);
-        if (!string.IsNullOrEmpty(toast.Group))
-            WinRtToastInterop.SetGroup(notification, toast.Group!);
-        if (toast.SuppressPopup)
-            WinRtToastInterop.SetSuppressPopup(notification, true);
-        if (toast.Priority != ToastPriority.Default)
-            WinRtToastInterop.SetPriority(notification, (int)toast.Priority);
-        if (toast.ExpiresOnReboot)
-            WinRtToastInterop.SetExpiresOnReboot(notification, true);
-        if (toast.ExpirationTime.HasValue)
-            WinRtToastInterop.SetExpirationTime(notification, toast.ExpirationTime.Value);
-
-        WinRtToastInterop.SubscribeActivated(notification, (args, input) =>
-            Post(() => handle.RaiseActivated(new ToastActivatedArgs(args, input))));
-
-        WinRtToastInterop.SubscribeDismissed(notification, reason =>
-            Post(() => handle.RaiseDismissed((ToastDismissalReason)reason)));
-
-        WinRtToastInterop.SubscribeFailed(notification, errorCode =>
-            Post(() => handle.RaiseFailed(errorCode)));
-
-        WinRtToastInterop.ShowNotification(_notifier!, notification);
-
-        // Bind progress tracker after show
-        if (toast.ProgressTracker != null)
+        IntPtr pNotif;
+        try
         {
-            var tag = toast.Tag!;
-            var group = toast.Group;
-            toast.ProgressTracker.Bind(data => UpdateInternal(tag, data, 0, group));
+            pNotif = _notifier.CreateNotification(pXmlDoc);
+            if (pNotif == IntPtr.Zero) return;
+        }
+        catch
+        {
+            Marshal.Release(pXmlDoc);
+            throw;
+        }
+
+        try
+        {
+            if (!string.IsNullOrEmpty(toast.Tag))
+                _notifier.SetTag(pNotif, toast.Tag!);
+            if (!string.IsNullOrEmpty(toast.Group))
+                _notifier.SetGroup(pNotif, toast.Group!);
+            if (toast.SuppressPopup)
+                _notifier.SetSuppressPopup(pNotif, true);
+            if (toast.Priority != ToastPriority.Default)
+                _notifier.SetPriority(pNotif, (int)toast.Priority);
+            if (toast.ExpiresOnReboot)
+                _notifier.SetExpiresOnReboot(pNotif, true);
+
+            _notifier.Show(pNotif);
+
+            if (toast.ProgressTracker != null)
+            {
+                var tag = toast.Tag!;
+                var group = toast.Group;
+                var tracker = toast.ProgressTracker;
+                tracker.Bind(data => UpdateInternal(tag, data, 0, group));
+
+                // Send initial data so bindings have values immediately
+                var initial = new Dictionary<string, string>
+                {
+                    ["progressStatus"] = " ",
+                    ["progressValue"] = toast.ProgressTracker.Value.ToString()
+                };
+                if (tracker.Title != null)
+                    initial["progressTitle"] = tracker.Title;
+                if (tracker.UseValueOverride)
+                    initial["progressValueOverride"] = "0%";
+                UpdateInternal(tag, initial, 0, group);
+            }
+        }
+        finally
+        {
+            Marshal.Release(pNotif);
+            Marshal.Release(pXmlDoc);
         }
     }
-
-    private void Post(Action action) => _threadContext.InvokeAsync(action);
 
     private static bool IsSupported()
     {

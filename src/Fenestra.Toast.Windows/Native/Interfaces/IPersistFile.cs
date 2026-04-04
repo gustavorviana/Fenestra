@@ -1,0 +1,16 @@
+﻿using System.Runtime.InteropServices;
+
+namespace Fenestra.Toast.Windows.Native.Interfaces;
+
+[ComImport]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+[Guid("0000010B-0000-0000-C000-000000000046")]
+internal interface IPersistFile
+{
+    void GetClassID(out Guid pClassID);
+    void IsDirty();
+    void Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, uint dwMode);
+    void Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, bool fRemember);
+    void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);
+    void GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);
+}

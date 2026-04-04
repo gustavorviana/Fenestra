@@ -8,6 +8,7 @@ using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Core.Tray;
 using Fenestra.Wpf;
+using Fenestra.Toast.Windows;
 using Fenestra.Wpf.Tray;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +25,7 @@ public partial class App : FenestraApp
         builder.UseSingleInstance();
         builder.UseAutoStart();
         builder.UseGlobalHotkeys();
+        builder.UseToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -179,7 +181,7 @@ public partial class App : FenestraApp
 
     private static void SetupHotkeys(IGlobalHotkeyService hotkeys, IEventBus bus)
     {
-        hotkeys.Register(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, HotkeyKey.F,
+        hotkeys.Register(HotkeyModifiers.Ctrl | HotkeyModifiers.Alt, HotkeyKey.F,
             () => bus.PublishAsync(new ShowWindowEvent()));
     }
 
