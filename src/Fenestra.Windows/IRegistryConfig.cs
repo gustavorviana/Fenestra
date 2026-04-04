@@ -14,8 +14,15 @@ public interface IRegistryConfig : IDisposable
 
     /// <summary>
     /// Gets a typed value from the current key. Returns <c>default</c> if the value does not exist.
+    /// Throws on conversion failure.
     /// </summary>
     T? Get<T>(string name);
+
+    /// <summary>
+    /// Tries to get a typed value from the current key.
+    /// Returns <c>false</c> if the value does not exist or conversion fails.
+    /// </summary>
+    bool TryGet<T>(string name, out T? value);
 
     /// <summary>
     /// Gets a string value from the current key, or <paramref name="defaultValue"/> if not found.
@@ -30,8 +37,15 @@ public interface IRegistryConfig : IDisposable
     /// <summary>
     /// Reads all properties of <typeparamref name="T"/> from the specified subkey.
     /// Properties whose type has <see cref="RegistrySectionAttribute"/> are read recursively from nested subkeys.
+    /// Throws on conversion failure.
     /// </summary>
     T GetSection<T>(string sectionName) where T : new();
+
+    /// <summary>
+    /// Tries to read all properties of <typeparamref name="T"/> from the specified subkey.
+    /// Returns <c>false</c> if the subkey does not exist or reading fails.
+    /// </summary>
+    bool TryGetSection<T>(string sectionName, out T? value) where T : new();
 
     /// <summary>
     /// Writes all readable properties of <paramref name="section"/> into the specified subkey.

@@ -60,6 +60,23 @@ internal sealed class RegistryConfigService : IRegistryConfig
         return (T)ConvertFromRegistry(raw, typeof(T));
     }
 
+    public bool TryGet<T>(string name, out T? value)
+    {
+        ThrowIfDisposed();
+        try
+        {
+            var raw = _key.GetValue(name);
+            if (raw is null) { value = default; return false; }
+            value = (T)ConvertFromRegistry(raw, typeof(T));
+            return true;
+        }
+        catch
+        {
+            value = default;
+            return false;
+        }
+    }
+
     public string? GetString(string name, string? defaultValue = null)
     {
         ThrowIfDisposed();
@@ -84,6 +101,26 @@ internal sealed class RegistryConfigService : IRegistryConfig
 
         ReadInto(section, subKey);
         return section;
+    }
+
+    public bool TryGetSection<T>(string sectionName, out T? value) where T : new()
+    {
+        ThrowIfDisposed();
+        try
+        {
+            using var subKey = _key.OpenSubKey(sectionName, false);
+            if (subKey is null) { value = default; return false; }
+
+            var section = new T();
+            ReadInto(section, subKey);
+            value = section;
+            return true;
+        }
+        catch
+        {
+            value = default;
+            return false;
+        }
     }
 
     public void SetSection(string sectionName, object section)
