@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Fenestra.Core.Models;
 
@@ -36,18 +37,10 @@ public class AppInfo
     public string? PackageFamilyName { get; }
 
     /// <summary>
-    /// Creates an <see cref="AppInfo"/> from the entry assembly metadata (name and version).
-    /// Used as the default fallback when no explicit app info is configured and the app is not packaged.
+    /// Gets the stable GUID that uniquely identifies this application installation.
+    /// Resolved from the assembly <see cref="GuidAttribute"/>, or persisted in the registry on first run.
     /// </summary>
-    public static AppInfo FromEntryAssembly()
-    {
-        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();
-        var name = assembly.GetName();
-        var product = assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product;
-        return new AppInfo(
-            product ?? name.Name ?? "FenestraApp",
-            name.Version ?? new Version(1, 0, 0));
-    }
+    public Guid AppGuid { get; internal set; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="AppInfo"/> for a classic (non-packaged) application.

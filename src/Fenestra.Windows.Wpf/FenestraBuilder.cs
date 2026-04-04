@@ -9,7 +9,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Reflection;
 using System.Windows;
 
 namespace Fenestra.Wpf;
@@ -19,7 +18,7 @@ namespace Fenestra.Wpf;
 /// </summary>
 public class FenestraBuilder
 {
-    private AppInfo? _appInfo;
+    private readonly AppInfoBuilder _appInfoBuilder = new();
     private IWpfApplication? _wpfAppInstance;
     private string[]? _args;
     private Type? _windowPositionStorageType;
@@ -65,9 +64,7 @@ public class FenestraBuilder
     /// </summary>
     public FenestraBuilder UseAppName(string appName)
     {
-        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();
-        var version = assembly.GetName().Version ?? new Version(1, 0, 0);
-        _appInfo = new AppInfo(appName, version);
+        _appInfoBuilder.AppName = appName;
         return this;
     }
 
@@ -77,7 +74,8 @@ public class FenestraBuilder
     /// </summary>
     public FenestraBuilder UseAppInfo(string appName, Version version)
     {
-        _appInfo = new AppInfo(appName, version);
+        _appInfoBuilder.AppName = appName;
+        _appInfoBuilder.Version = version;
         return this;
     }
 
@@ -87,7 +85,9 @@ public class FenestraBuilder
     /// </summary>
     public FenestraBuilder UseAppInfo(string appName, string appId, Version version)
     {
-        _appInfo = new AppInfo(appName, appId, version);
+        _appInfoBuilder.AppName = appName;
+        _appInfoBuilder.AppId = appId;
+        _appInfoBuilder.Version = version;
         return this;
     }
 
@@ -273,10 +273,25 @@ public class FenestraBuilder
                 services.Add(descriptor);
             }
 
-            services.AddSingleton(appInfo);
-
             var registryPath = $@"SOFTWARE\{appInfo.AppName}";
-            services.AddSingleton<IRegistryConfig>(new global::Fenestra.Windows.Services.RegistryConfigService(registryPath));
+            var registryConfig = new Windows.Services.RegistryConfigService(registryPath);
+            services.AddSingleton<IRegistryConfig>(registryConfig);
+
+            if (appInfo.AppGuid == Guid.Empty)
+            {
+                var existing = registryConfig.Get<Guid>("AppGuid");
+                if (existing != Guid.Empty)
+                {
+                    appInfo.AppGuid = existing;
+                }
+                else
+                {
+                    appInfo.AppGuid = Guid.NewGuid();
+                    registryConfig.Set("AppGuid", appInfo.AppGuid);
+                }
+            }
+
+            services.AddSingleton(appInfo);
 
             if (_windowPositionStorageType != null)
             {
@@ -338,6 +353,6 @@ public class FenestraBuilder
         if (packaged != null)
             return packaged;
 
-        return _appInfo ?? AppInfo.FromEntryAssembly();
+        return _appInfoBuilder.FromEntryAssembly().Build();
     }
 }
