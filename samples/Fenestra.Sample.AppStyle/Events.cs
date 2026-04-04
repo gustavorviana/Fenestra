@@ -1,4 +1,4 @@
-using Fenestra.Core.Models;
+using Fenestra.Windows.Models;
 
 namespace Fenestra.Sample.AppStyle;
 

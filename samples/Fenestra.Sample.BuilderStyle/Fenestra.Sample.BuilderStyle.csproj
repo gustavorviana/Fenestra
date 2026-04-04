@@ -10,7 +10,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Fenestra.Wpf\Fenestra.Wpf.csproj" />
+    <ProjectReference Include="..\..\src\Fenestra.Windows.Wpf\Fenestra.Windows.Wpf.csproj" />
+    <ProjectReference Include="..\..\src\Fenestra.Windows\Fenestra.Windows.csproj" />
   </ItemGroup>
 
 </Project>

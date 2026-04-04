@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Fenestra.Toast.Windows" />
+    <InternalsVisibleTo Include="Fenestra.Windows" />
     <InternalsVisibleTo Include="Fenestra.Tests" />
   </ItemGroup>
 

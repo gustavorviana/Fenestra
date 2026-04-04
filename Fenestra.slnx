@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Fenestra.Core/Fenestra.Core.csproj" />
-    <Project Path="src/Fenestra.Toast.Windows/Fenestra.Toast.Windows.csproj" Id="a553c0d1-c1c9-48f2-84e8-b8c43f8eed14" />
-    <Project Path="src/Fenestra.Wpf/Fenestra.Wpf.csproj" />
+    <Project Path="src/Fenestra.Windows/Fenestra.Windows.csproj" Id="a553c0d1-c1c9-48f2-84e8-b8c43f8eed14" />
+    <Project Path="src/Fenestra.Windows.Wpf/Fenestra.Windows.Wpf.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Fenestra.Tests/Fenestra.Tests.csproj" />

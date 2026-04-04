@@ -5,10 +5,10 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Fenestra.Core;
-using Fenestra.Core.Models;
-using Fenestra.Core.Tray;
+using Fenestra.Windows.Models;
+using Fenestra.Windows.Tray;
 using Fenestra.Wpf;
-using Fenestra.Toast.Windows;
+using Fenestra.Windows;
 using Fenestra.Wpf.Tray;
 using Microsoft.Extensions.DependencyInjection;
 
