@@ -60,6 +60,16 @@ public interface IRegistryConfig : IDisposable
     IRegistryConfig? GetSection(string sectionName, bool createIfNotExists = false);
 
     /// <summary>
+    /// Returns <c>true</c> if a value with the specified name exists in the current key.
+    /// </summary>
+    bool Exists(string name);
+
+    /// <summary>
+    /// Returns the names of all values in the current key.
+    /// </summary>
+    string[] GetValueNames();
+
+    /// <summary>
     /// Returns the names of all subkeys under the current key.
     /// </summary>
     string[] GetSections();

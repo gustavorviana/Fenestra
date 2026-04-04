@@ -147,6 +147,18 @@ internal sealed class RegistryConfigService : IRegistryConfig
         return new RegistryConfigService(_key.CreateSubKey(sectionName, true));
     }
 
+    public bool Exists(string name)
+    {
+        ThrowIfDisposed();
+        return _key.GetValue(name) is not null;
+    }
+
+    public string[] GetValueNames()
+    {
+        ThrowIfDisposed();
+        return _key.GetValueNames();
+    }
+
     public string[] GetSections()
     {
         ThrowIfDisposed();
