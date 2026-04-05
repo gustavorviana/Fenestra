@@ -1,4 +1,4 @@
-using static Fenestra.Windows.Native.Toast.ToastInteropConstants;
+using System.Runtime.InteropServices;
 
 namespace Fenestra.Windows.Native.Toast;
 
@@ -10,43 +10,73 @@ internal static class NativeToastHistory
 {
     public static void Remove(string tag)
     {
-        using var pHistory = GetHistory();
-        if (pHistory == null) return;
-        WinRtToastInterop.CallSetHString(pHistory, Slot_History_Remove, tag);
+        var history = GetHistory();
+        if (history == null) return;
+        try
+        {
+            using var hTag = HStringHandle.Create(tag);
+            history.Remove(hTag.DangerousGetHandle());
+        }
+        finally { Marshal.ReleaseComObject(history); }
     }
 
     public static void RemoveGrouped(string tag, string group)
     {
-        using var pHistory = GetHistory();
-        if (pHistory == null) return;
-        WinRtToastInterop.CallHStringHString(pHistory, Slot_History_RemoveGroupedTag, tag, group);
+        var history = GetHistory();
+        if (history == null) return;
+        try
+        {
+            using var hTag = HStringHandle.Create(tag);
+            using var hGroup = HStringHandle.Create(group);
+            history.RemoveGroupedTag(hTag.DangerousGetHandle(), hGroup.DangerousGetHandle());
+        }
+        finally { Marshal.ReleaseComObject(history); }
     }
 
     public static void RemoveGroup(string group)
     {
-        using var pHistory = GetHistory();
-        if (pHistory == null) return;
-        WinRtToastInterop.CallSetHString(pHistory, Slot_History_RemoveGroup, group);
+        var history = GetHistory();
+        if (history == null) return;
+        try
+        {
+            using var hGroup = HStringHandle.Create(group);
+            history.RemoveGroup(hGroup.DangerousGetHandle());
+        }
+        finally { Marshal.ReleaseComObject(history); }
     }
 
     public static void Clear()
     {
-        using var pHistory = GetHistory();
-        if (pHistory == null) return;
-        WinRtToastInterop.CallVoid(pHistory, Slot_History_Clear);
+        var history = GetHistory();
+        if (history == null) return;
+        try { history.Clear(); }
+        finally { Marshal.ReleaseComObject(history); }
     }
 
     public static void ClearWithId(string appId)
     {
-        using var pHistory = GetHistory();
-        if (pHistory == null) return;
-        WinRtToastInterop.CallSetHString(pHistory, Slot_History_ClearWithId, appId);
+        var history = GetHistory();
+        if (history == null) return;
+        try
+        {
+            using var hAppId = HStringHandle.Create(appId);
+            history.ClearWithId(hAppId.DangerousGetHandle());
+        }
+        finally { Marshal.ReleaseComObject(history); }
     }
 
-    private static ComPointerHandle? GetHistory()
+    private static IToastNotificationHistory? GetHistory()
     {
-        using var pManager2 = WinRtToastInterop.GetActivationFactory(
-            "Windows.UI.Notifications.ToastNotificationManager", IID_IToastNotificationManagerStatics2);
-        return pManager2 != null ? WinRtToastInterop.CallGetPtr(pManager2, Slot_Manager2_get_History) : null;
+        var manager2 = WinRtToastInterop.GetActivationFactoryAs<IToastNotificationManagerStatics2>(
+            "Windows.UI.Notifications.ToastNotificationManager", ToastInteropConstants.IID_IToastNotificationManagerStatics2);
+        if (manager2 == null) return null;
+
+        try
+        {
+            var hr = manager2.get_History(out var pHistory);
+            if (hr != 0 || pHistory == IntPtr.Zero) return null;
+            return WinRtToastInterop.CastComPointer<IToastNotificationHistory>(pHistory);
+        }
+        finally { Marshal.ReleaseComObject(manager2); }
     }
 }

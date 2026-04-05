@@ -155,9 +155,19 @@ internal class InternalNotificationHandle : FenestraComponent
 
         if (pArgs != IntPtr.Zero)
         {
-            arguments = ReadHStringFromQI(pArgs,
-                ToastInteropConstants.IID_IToastActivatedEventArgs,
-                ToastInteropConstants.Slot_ActivatedArgs_get_Arguments);
+            var args = WinRtToastInterop.BorrowComPointer<IToastActivatedEventArgs>(pArgs);
+            if (args != null)
+            {
+                try
+                {
+                    if (args.get_Arguments(out var hString) == 0 && hString != IntPtr.Zero)
+                    {
+                        using var h = new HStringHandle(hString);
+                        arguments = h.ToString();
+                    }
+                }
+                finally { Marshal.ReleaseComObject(args); }
+            }
 
             ReadUserInput(pArgs, userInput);
         }
@@ -170,9 +180,12 @@ internal class InternalNotificationHandle : FenestraComponent
         var reason = 0;
         if (pArgs != IntPtr.Zero)
         {
-            reason = ReadIntFromQI(pArgs,
-                ToastInteropConstants.IID_IToastDismissedEventArgs,
-                ToastInteropConstants.Slot_DismissedArgs_get_Reason);
+            var args = WinRtToastInterop.BorrowComPointer<IToastDismissedEventArgs>(pArgs);
+            if (args != null)
+            {
+                try { args.get_Reason(out reason); }
+                finally { Marshal.ReleaseComObject(args); }
+            }
         }
 
         OnDismissed?.Invoke((ToastDismissalReason)reason);
@@ -183,9 +196,12 @@ internal class InternalNotificationHandle : FenestraComponent
         var errorCode = 0;
         if (pArgs != IntPtr.Zero)
         {
-            errorCode = ReadIntFromQI(pArgs,
-                ToastInteropConstants.IID_IToastFailedEventArgs,
-                ToastInteropConstants.Slot_FailedArgs_get_ErrorCode);
+            var args = WinRtToastInterop.BorrowComPointer<IToastFailedEventArgs>(pArgs);
+            if (args != null)
+            {
+                try { args.get_ErrorCode(out errorCode); }
+                finally { Marshal.ReleaseComObject(args); }
+            }
         }
 
         OnFailed?.Invoke(errorCode);
@@ -195,128 +211,81 @@ internal class InternalNotificationHandle : FenestraComponent
 
     private static void ReadUserInput(IntPtr pArgs, Dictionary<string, string> result)
     {
-        // QI for IToastActivatedEventArgs2
-        var iid2 = ToastInteropConstants.IID_IToastActivatedEventArgs2;
-        if (Marshal.QueryInterface(pArgs, ref iid2, out var pArgs2) != 0 || pArgs2 == IntPtr.Zero)
-            return;
+        var args2 = WinRtToastInterop.BorrowComPointer<IToastActivatedEventArgs2>(pArgs);
+        if (args2 == null) return;
 
         try
         {
-            // get_UserInput(out IPropertySet*) — slot 6
-            var hr = SlotCall<OutPtrFn>(pArgs2, ToastInteropConstants.Slot_ActivatedArgs2_get_UserInput)(pArgs2, out var pPropSet);
-            if (hr != 0 || pPropSet == IntPtr.Zero) return;
+            if (args2.get_UserInput(out var pPropSet) != 0 || pPropSet == IntPtr.Zero)
+                return;
+
+            var iterable = WinRtToastInterop.CastComPointer<IIterableKvpStringObject>(pPropSet);
+            if (iterable == null) return;
 
             try
             {
-                // QI for IIterable<IKeyValuePair<String, Object>>
-                var iidIterable = ToastInteropConstants.IID_IIterable_KVP_String_Object;
-                if (Marshal.QueryInterface(pPropSet, ref iidIterable, out var pIterable) != 0 || pIterable == IntPtr.Zero)
-                    return;
+                if (iterable.First(out var pIter) != 0 || pIter == IntPtr.Zero) return;
 
-                try
-                {
-                    // First() → IIterator*
-                    hr = SlotCall<OutPtrFn>(pIterable, ToastInteropConstants.Slot_Iterable_First)(pIterable, out var pIter);
-                    if (hr != 0 || pIter == IntPtr.Zero) return;
+                var iterator = WinRtToastInterop.CastComPointer<IIteratorKvpStringObject>(pIter);
+                if (iterator == null) return;
 
-                    try { IterateUserInputPairs(pIter, result); }
-                    finally { Marshal.Release(pIter); }
-                }
-                finally { Marshal.Release(pIterable); }
+                try { IterateUserInputPairs(iterator, result); }
+                finally { Marshal.ReleaseComObject(iterator); }
             }
-            finally { Marshal.Release(pPropSet); }
+            finally { Marshal.ReleaseComObject(iterable); }
         }
-        finally { Marshal.Release(pArgs2); }
+        finally { Marshal.ReleaseComObject(args2); }
     }
 
-    private static void IterateUserInputPairs(IntPtr pIter, Dictionary<string, string> result)
+    private static void IterateUserInputPairs(IIteratorKvpStringObject iterator, Dictionary<string, string> result)
     {
         while (true)
         {
-            // get_HasCurrent(out boolean)
-            SlotCall<OutIntFn>(pIter, ToastInteropConstants.Slot_Iterator_get_HasCurrent)(pIter, out var hasCurrent);
+            iterator.get_HasCurrent(out var hasCurrent);
             if (hasCurrent == 0) break;
 
-            // get_Current(out IKeyValuePair<String, Object>*)
-            if (SlotCall<OutPtrFn>(pIter, ToastInteropConstants.Slot_Iterator_get_Current)(pIter, out var pKvp) == 0 && pKvp != IntPtr.Zero)
+            if (iterator.get_Current(out var pKvp) == 0 && pKvp != IntPtr.Zero)
             {
-                try
+                var kvp = WinRtToastInterop.CastComPointer<IKeyValuePairStringObject>(pKvp);
+                if (kvp != null)
                 {
-                    var key = ReadHStringFromSlot(pKvp, ToastInteropConstants.Slot_KVP_Object_get_Key);
-                    var value = ReadObjectValueAsString(pKvp);
-                    if (!string.IsNullOrEmpty(key))
-                        result[key] = value;
+                    try
+                    {
+                        var key = ReadHString(kvp.get_Key);
+                        var value = ReadObjectValueAsString(kvp);
+                        if (!string.IsNullOrEmpty(key))
+                            result[key] = value;
+                    }
+                    finally { Marshal.ReleaseComObject(kvp); }
                 }
-                finally { Marshal.Release(pKvp); }
             }
 
-            // MoveNext(out boolean)
-            SlotCall<OutIntFn>(pIter, ToastInteropConstants.Slot_Iterator_MoveNext)(pIter, out var moved);
+            iterator.MoveNext(out var moved);
             if (moved == 0) break;
         }
     }
 
-    private static string ReadObjectValueAsString(IntPtr pKvp)
+    private static string ReadObjectValueAsString(IKeyValuePairStringObject kvp)
     {
-        // get_Value(out IInspectable*) — slot 7
-        if (SlotCall<OutPtrFn>(pKvp, ToastInteropConstants.Slot_KVP_Object_get_Value)(pKvp, out var pValue) != 0 || pValue == IntPtr.Zero)
+        if (kvp.get_Value(out var pValue) != 0 || pValue == IntPtr.Zero)
             return "";
 
-        try
-        {
-            // QI for IPropertyValue, then GetString (slot 19)
-            var iidPv = ToastInteropConstants.IID_IPropertyValue;
-            if (Marshal.QueryInterface(pValue, ref iidPv, out var pPropVal) != 0 || pPropVal == IntPtr.Zero)
-                return "";
+        var propVal = WinRtToastInterop.CastComPointer<IPropertyValue>(pValue);
+        if (propVal == null) return "";
 
-            try { return ReadHStringFromSlot(pPropVal, ToastInteropConstants.Slot_PV_GetString); }
-            finally { Marshal.Release(pPropVal); }
-        }
-        finally { Marshal.Release(pValue); }
+        try { return ReadHString(propVal.GetString); }
+        finally { Marshal.ReleaseComObject(propVal); }
     }
 
-    // --- Low-level COM helpers ---
+    private delegate int HStringGetter(out IntPtr result);
 
-    private static string ReadHStringFromQI(IntPtr pObj, Guid iid, int slot)
+    private static string ReadHString(HStringGetter getter)
     {
-        if (Marshal.QueryInterface(pObj, ref iid, out var p) != 0 || p == IntPtr.Zero)
-            return "";
-        try { return ReadHStringFromSlot(p, slot); }
-        finally { Marshal.Release(p); }
-    }
-
-    private static int ReadIntFromQI(IntPtr pObj, Guid iid, int slot)
-    {
-        if (Marshal.QueryInterface(pObj, ref iid, out var p) != 0 || p == IntPtr.Zero)
-            return 0;
-        try
-        {
-            SlotCall<OutIntFn>(p, slot)(p, out var result);
-            return result;
-        }
-        finally { Marshal.Release(p); }
-    }
-
-    private static string ReadHStringFromSlot(IntPtr pObj, int slot)
-    {
-        var hr = SlotCall<OutPtrFn>(pObj, slot)(pObj, out var hstringPtr);
+        var hr = getter(out var hstringPtr);
         if (hr != 0 || hstringPtr == IntPtr.Zero) return "";
         using var hstring = new HStringHandle(hstringPtr);
         return hstring.ToString();
     }
-
-    private static T SlotCall<T>(IntPtr pObj, int slot) where T : Delegate
-    {
-        var vtable = Marshal.ReadIntPtr(pObj);
-        var fnPtr = Marshal.ReadIntPtr(vtable, slot * IntPtr.Size);
-        return Marshal.GetDelegateForFunctionPointer<T>(fnPtr);
-    }
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int OutPtrFn(IntPtr @this, out IntPtr result);
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int OutIntFn(IntPtr @this, out int result);
 
     // --- Properties ---
 

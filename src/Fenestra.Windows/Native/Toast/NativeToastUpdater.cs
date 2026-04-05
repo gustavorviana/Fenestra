@@ -5,24 +5,28 @@ namespace Fenestra.Windows.Native.Toast;
 
 /// <summary>
 /// Responsible for updating toast notification data bindings (progress bars).
-/// Owns the IToastNotifier2 COM pointer. May be null if the OS doesn't support it.
+/// Does not own the IToastNotifier2 RCW — the parent <see cref="NativeToastNotifier"/> manages its lifetime.
 /// </summary>
-internal sealed class NativeToastUpdater : IDisposable
+internal sealed class NativeToastUpdater
 {
-    private readonly ComPointerHandle _pNotifier2;
+    private readonly IToastNotifier2 _notifier2;
 
-    private NativeToastUpdater(ComPointerHandle pNotifier2)
+    private NativeToastUpdater(IToastNotifier2 notifier2)
     {
-        _pNotifier2 = pNotifier2;
+        _notifier2 = notifier2;
     }
 
     /// <summary>
     /// Creates an updater if the notifier supports IToastNotifier2. Returns null otherwise.
     /// </summary>
-    public static NativeToastUpdater? TryCreate(ComPointerHandle pNotifier)
+    public static NativeToastUpdater? TryCreate(IToastNotifier notifier)
     {
-        var p = pNotifier.QueryInterface(IID_IToastNotifier2);
-        return p != null ? new NativeToastUpdater(p) : null;
+        try
+        {
+            var notifier2 = (IToastNotifier2)notifier;
+            return new NativeToastUpdater(notifier2);
+        }
+        catch (InvalidCastException) { return null; }
     }
 
     public int Update(string tag, string? group, Dictionary<string, string> data, uint sequenceNumber)
@@ -30,37 +34,51 @@ internal sealed class NativeToastUpdater : IDisposable
         using var pData = CreateNotificationData(data, sequenceNumber);
         if (pData == null) return NotificationUpdateResult_Failed;
 
-        if (group != null)
-            return WinRtToastInterop.CallUpdateTagGroup(_pNotifier2, Slot_Notifier2_UpdateWithTagAndGroup, pData, tag, group);
+        using var hTag = HStringHandle.Create(tag);
 
-        return WinRtToastInterop.CallUpdateTag(_pNotifier2, Slot_Notifier2_UpdateWithTag, pData, tag);
+        if (group != null)
+        {
+            using var hGroup = HStringHandle.Create(group);
+            _notifier2.UpdateWithTagAndGroup(
+                pData.DangerousGetHandle(), hTag.DangerousGetHandle(), hGroup.DangerousGetHandle(), out var result);
+            return result;
+        }
+
+        _notifier2.UpdateWithTag(pData.DangerousGetHandle(), hTag.DangerousGetHandle(), out var tagResult);
+        return tagResult;
     }
 
     private static ComPointerHandle? CreateNotificationData(Dictionary<string, string> data, uint sequenceNumber)
     {
-        var pData = WinRtToastInterop.ActivateInstance("Windows.UI.Notifications.NotificationData");
-        if (pData == null) return null;
+        var notifData = WinRtToastInterop.ActivateInstanceAs<INotificationData>("Windows.UI.Notifications.NotificationData");
+        if (notifData == null) return null;
 
-        WinRtToastInterop.CallSetUInt(pData, Slot_NotifData_put_SequenceNumber, sequenceNumber);
-
-        using var pMap = WinRtToastInterop.CallGetPtr(pData, Slot_NotifData_get_Values);
-        if (pMap != null)
+        try
         {
-            foreach (var kv in data)
+            notifData.put_SequenceNumber(sequenceNumber);
+
+            notifData.get_Values(out var pMap);
+            if (pMap != IntPtr.Zero)
             {
-                using var hKey = HStringHandle.Create(kv.Key);
-                using var hVal = HStringHandle.Create(kv.Value);
-                var fn = ComFactory.GetDelegate<MapInsertDelegate>(
-                    WinRtToastInterop.GetVtableSlot(pMap, Slot_Map_Insert));
-                fn(pMap.DangerousGetHandle(), hKey.DangerousGetHandle(), hVal.DangerousGetHandle(), out _);
+                var map = WinRtToastInterop.CastComPointer<IMapStringString>(pMap);
+                if (map != null)
+                {
+                    try
+                    {
+                        foreach (var kv in data)
+                        {
+                            using var hKey = HStringHandle.Create(kv.Key);
+                            using var hVal = HStringHandle.Create(kv.Value);
+                            map.Insert(hKey.DangerousGetHandle(), hVal.DangerousGetHandle(), out _);
+                        }
+                    }
+                    finally { Marshal.ReleaseComObject(map); }
+                }
             }
+
+            var ptr = Marshal.GetIUnknownForObject(notifData);
+            return new ComPointerHandle(ptr);
         }
-
-        return pData;
+        finally { Marshal.ReleaseComObject(notifData); }
     }
-
-    [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    private delegate int MapInsertDelegate(IntPtr @this, IntPtr key, IntPtr value, out int replaced);
-
-    public void Dispose() => _pNotifier2.Dispose();
 }

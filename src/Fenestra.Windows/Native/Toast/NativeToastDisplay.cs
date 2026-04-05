@@ -1,41 +1,29 @@
 using System.Runtime.InteropServices;
-using static Fenestra.Windows.Native.Toast.ToastInteropConstants;
 
 namespace Fenestra.Windows.Native.Toast;
 
 /// <summary>
 /// Responsible for creating and displaying toast notifications (Show/Hide).
-/// Owns the IToastNotifier COM pointer.
+/// Does not own the IToastNotifier RCW — the parent <see cref="NativeToastNotifier"/> manages its lifetime.
 /// </summary>
-internal sealed class NativeToastDisplay : IDisposable
+internal sealed class NativeToastDisplay
 {
-    private readonly ComPointerHandle _pToastNotifier;
+    private readonly IToastNotifier _notifier;
 
-    public NativeToastDisplay(ComPointerHandle pNotifier)
+    public NativeToastDisplay(IToastNotifier notifier)
     {
-        _pToastNotifier = pNotifier.QueryInterface(IID_IToastNotifier)
-            ?? throw new InvalidOperationException("QI for IToastNotifier failed.");
+        _notifier = notifier;
     }
 
     public void Show(ComPointerHandle pNotification)
     {
-        using var pNotif = pNotification.QueryInterface(IID_IToastNotification);
-        if (pNotif == null)
-            throw new InvalidOperationException("QI for IToastNotification failed.");
-
-        var hr = WinRtToastInterop.CallWithPtr(_pToastNotifier, Slot_Notifier_Show, pNotif.DangerousGetHandle());
+        var hr = _notifier.Show(pNotification.DangerousGetHandle());
         if (hr < 0) throw new COMException($"IToastNotifier.Show failed. HRESULT=0x{hr:X8}", hr);
     }
 
     public void Hide(ComPointerHandle pNotification)
     {
-        using var pNotif = pNotification.QueryInterface(IID_IToastNotification);
-        if (pNotif == null)
-            throw new InvalidOperationException("QI for IToastNotification failed.");
-
-        var hr = WinRtToastInterop.CallWithPtr(_pToastNotifier, Slot_Notifier_Hide, pNotif.DangerousGetHandle());
+        var hr = _notifier.Hide(pNotification.DangerousGetHandle());
         if (hr < 0) throw new COMException($"IToastNotifier.Hide failed. HRESULT=0x{hr:X8}", hr);
     }
-
-    public void Dispose() => _pToastNotifier.Dispose();
 }
