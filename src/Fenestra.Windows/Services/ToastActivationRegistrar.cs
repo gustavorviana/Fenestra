@@ -1,6 +1,5 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
-using Fenestra.Windows.Native;
 using Fenestra.Windows.Native.Toast;
 
 namespace Fenestra.Windows.Services;
@@ -17,12 +16,10 @@ namespace Fenestra.Windows.Services;
 /// </summary>
 internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
 {
-    private readonly AppInfo _appInfo;
     private readonly IThreadContext _threadContext;
     private readonly IApplicationActivator? _activator;
+    private readonly AppShortcutManager _shortcut;
     private readonly Guid _clsid;
-    private readonly string _exePath;
-    private readonly string _shortcutPath;
     private bool _registered;
 
     /// <inheritdoc />
@@ -30,15 +27,10 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
 
     public ToastActivationRegistrar(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null)
     {
-        _appInfo = appInfo;
         _threadContext = threadContext;
         _activator = activator;
+        _shortcut = new AppShortcutManager(appInfo);
         _clsid = appInfo.AppGuid;
-        _exePath = WindowsNotificationRegistrationManager.GetCurrentExecutablePath();
-        _shortcutPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            @"Microsoft\Windows\Start Menu\Programs",
-            $"{appInfo.AppName}.lnk");
     }
 
     /// <inheritdoc />
@@ -48,7 +40,7 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
         Platform.EnsureWindows10();
 
         RegisterComServerInRegistry();
-        EnsureShortcutHasClsid();
+        _shortcut.CreateOrUpdateShortcut(_clsid);
 
         NotificationActivatorServer.Register(_clsid, (_, _) =>
         {
@@ -83,20 +75,6 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
     {
         var regPath = $@"SOFTWARE\Classes\CLSID\{{{_clsid}}}\LocalServer32";
         using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(regPath);
-        key.SetValue(null, $"\"{_exePath}\"");
-    }
-
-    private void EnsureShortcutHasClsid()
-    {
-        var workingDir = Path.GetDirectoryName(_exePath) ?? AppDomain.CurrentDomain.BaseDirectory;
-
-        using var link = ShellLink.Create(_shortcutPath);
-        link.TargetPath = _exePath;
-        link.WorkingDirectory = workingDir;
-        link.Description = _appInfo.AppName;
-        link.SetIconLocation(_exePath);
-        link.AppUserModelId = _appInfo.AppId;
-        link.ToastActivatorClsid = _clsid;
-        link.Save();
+        key.SetValue(null, $"\"{_shortcut.ExePath}\"");
     }
 }
