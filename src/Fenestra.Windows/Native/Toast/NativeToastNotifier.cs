@@ -14,6 +14,9 @@ internal sealed class NativeToastNotifier : IDisposable
     private readonly IWinRtInterop _interop;
     private readonly ComRef<IToastNotifier> _notifier;
     private readonly ComRef<IToastNotificationHistory>? _history;
+    // Lazy-cached factories — WinRT activation factories are singletons, safe to reuse
+    private ComRef<IPropertyValueStatics>? _propertyValueFactory;
+    private ComRef<IScheduledToastNotificationFactory>? _scheduledFactory;
     private bool _disposed;
 
     /// <summary>Direct access to the toast notification history interface. Null if unsupported.</summary>
@@ -66,6 +69,8 @@ internal sealed class NativeToastNotifier : IDisposable
         return (NotificationSetting)setting;
     }
 
+    // ExpirationTime requires boxing DateTimeOffset into IReference<DateTime> via IPropertyValueStatics.
+    // The boxed value is an IntPtr (IInspectable) because IReference<T> has no fixed GUID for [ComImport].
     public void SetExpirationTime(IToastNotification notification, DateTimeOffset expirationTime)
     {
         var pBoxed = BoxDateTime(expirationTime);
@@ -78,11 +83,11 @@ internal sealed class NativeToastNotifier : IDisposable
 
     public IScheduledToastNotification CreateScheduledToast(object xmlDoc, DateTimeOffset deliveryTime)
     {
-        using var factory = _interop.GetActivationFactory<IScheduledToastNotificationFactory>(
+        _scheduledFactory ??= _interop.GetActivationFactory<IScheduledToastNotificationFactory>(
             "Windows.UI.Notifications.ScheduledToastNotification", IID_IScheduledToastNotificationFactory)
             ?? throw new InvalidOperationException("Failed to get ScheduledToastNotification factory.");
 
-        var hr = factory.Value.CreateScheduledToastNotification(xmlDoc, deliveryTime.UtcDateTime.ToFileTimeUtc(), out var pResult);
+        var hr = _scheduledFactory.Value.CreateScheduledToastNotification(xmlDoc, deliveryTime.UtcDateTime.ToFileTimeUtc(), out var pResult);
         if (hr < 0) throw new COMException($"CreateScheduledToastNotification failed. HRESULT=0x{hr:X8}", hr);
 
         return _interop.CastPointer<IScheduledToastNotification>(pResult)?.Value
@@ -129,6 +134,7 @@ internal sealed class NativeToastNotifier : IDisposable
 
         notifData.Value.put_SequenceNumber(sequenceNumber);
 
+        // get_Values returns a separate COM identity (IMap) that must be released independently
         if (notifData.Value.get_Values(out var rawMap) == 0 && rawMap != null)
         {
             using var map = new ComRef<IMapStringString>(rawMap);
@@ -139,22 +145,27 @@ internal sealed class NativeToastNotifier : IDisposable
         return notifData;
     }
 
+    // Returns raw IntPtr (IReference<DateTime>) — caller must Marshal.Release.
+    // Cannot return ComRef because IReference<T> is a parameterized WinRT type with no fixed GUID.
     private IntPtr BoxDateTime(DateTimeOffset value)
     {
-        using var factory = _interop.GetActivationFactory<IPropertyValueStatics>(
+        _propertyValueFactory ??= _interop.GetActivationFactory<IPropertyValueStatics>(
             "Windows.Foundation.PropertyValue", IID_IPropertyValueStatics);
-        if (factory == null) return IntPtr.Zero;
+        if (_propertyValueFactory == null) return IntPtr.Zero;
 
-        var hr = factory.Value.CreateDateTime(value.UtcDateTime.ToFileTimeUtc(), out var result);
+        var hr = _propertyValueFactory.Value.CreateDateTime(value.UtcDateTime.ToFileTimeUtc(), out var result);
         return hr == 0 ? result : IntPtr.Zero;
     }
 
     // --- Dispose ---
+    // Release order: factories first (they depend on nothing), then history, then notifier (root)
 
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        _scheduledFactory?.Dispose();
+        _propertyValueFactory?.Dispose();
         _history?.Dispose();
         _notifier.Dispose();
     }

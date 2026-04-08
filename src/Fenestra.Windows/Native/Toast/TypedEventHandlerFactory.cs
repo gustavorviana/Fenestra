@@ -114,7 +114,7 @@ internal static class TypedEventHandlerFactory
     {
         var state = GetState(@this);
         var count = Interlocked.Decrement(ref state.RefCount);
-        if (count <= 0)
+        if (count == 0)
         {
             var ptr = Marshal.ReadIntPtr(@this, IntPtr.Size);
             GCHandle.FromIntPtr(ptr).Free();

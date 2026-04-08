@@ -127,15 +127,22 @@ internal class InternalNotificationHandle : FenestraComponent
             ToastInteropConstants.IID_TypedEventHandler_Failed,
             (_, args) => HandleFailed(args));
 
+        long activatedToken = 0, dismissedToken = 0, failedToken = 0;
         try
         {
-            _notification.Value.add_Activated(_activatedHandler, out _);
-            _notification.Value.add_Dismissed(_dismissedHandler, out _);
-            _notification.Value.add_Failed(_failedHandler, out _);
+            _notification.Value.add_Activated(_activatedHandler, out activatedToken);
+            _notification.Value.add_Dismissed(_dismissedHandler, out dismissedToken);
+            _notification.Value.add_Failed(_failedHandler, out failedToken);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] Event registration failed: {ex.Message}");
+
+            // Unregister any handlers that were already registered before releasing them
+            if (activatedToken != 0) _notification.Value.remove_Activated(activatedToken);
+            if (dismissedToken != 0) _notification.Value.remove_Dismissed(dismissedToken);
+            if (failedToken != 0) _notification.Value.remove_Failed(failedToken);
+
             ReleaseEventHandlers();
         }
     }
