@@ -118,7 +118,7 @@ public partial class App : FenestraApp
 
         if (Platform.IsWindows10OrLater)
         {
-            builder.UseThemeDetection();
+            builder.UseWindowsThemeDetection();
         }
     }
 

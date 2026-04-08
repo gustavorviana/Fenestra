@@ -21,12 +21,12 @@ public partial class App : FenestraApp
 
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseMinimizeToTray();
-        builder.UseSingleInstance();
-        builder.UseAutoStart();
-        builder.UseGlobalHotkeys();
-        builder.UseToastNotifications();
-        builder.UseToastActivation();
+        builder.Services.AddWpfMinimizeToTray();
+        builder.Services.AddWpfSingleInstance();
+        builder.Services.AddWpfGlobalHotkeys();
+        builder.Services.AddWindowsAutoStart();
+        builder.Services.AddWindowsToastNotifications();
+        builder.Services.AddWindowsToastActivation();
         builder.RegisterWindows();
     }
 

@@ -39,13 +39,13 @@ Each feature is opt-in via the builder:
 ```csharp
 var app = FenestraBuilder.CreateDefault()
     .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseToastNotifications()    // Toast notifications (Windows 10+)
-    .UseTrayIcon()              // System tray icon
-    .UseMinimizeToTray()        // Minimize-to-tray behavior
-    .UseGlobalHotkeys()         // Global keyboard shortcuts
-    .UseThemeDetection()        // Dark/light mode detection
-    .UseAutoStart()             // Run on Windows startup
-    .UseSingleInstance()        // Prevent multiple instances
+    .UseWindowsToastNotifications()    // Toast notifications (Windows 10+)
+    .UseWindowsTrayIcon()              // System tray icon
+    .UseWindowsMinimizeToTray()        // Minimize-to-tray behavior
+    .UseWindowsGlobalHotkeys()         // Global keyboard shortcuts
+    .UseWindowsThemeDetection()        // Dark/light mode detection
+    .UseWindowsAutoStart()             // Run on Windows startup
+    .UseWindowsSingleInstance()        // Prevent multiple instances
     .Build();
 ```
 
@@ -77,17 +77,17 @@ public class MainViewModel
 
 | Feature | Builder Method | Interface | Doc |
 |---------|---------------|-----------|-----|
-| [Toast Notifications](toast-notifications.md) | `UseToastNotifications()` | `IToastService` | Windows 10+ |
-| [Tray Icon](tray-icon.md) | `UseTrayIcon()` | `ITrayIconService` | All Windows |
+| [Toast Notifications](toast-notifications.md) | `UseWindowsToastNotifications()` | `IToastService` | Windows 10+ |
+| [Tray Icon](tray-icon.md) | `UseWindowsTrayIcon()` | `ITrayIconService` | All Windows |
 | [Taskbar Progress](taskbar-progress.md) | *(auto)* | `ITaskbarProgress` | Windows 7+ |
-| [Global Hotkeys](global-hotkeys.md) | `UseGlobalHotkeys()` | `IGlobalHotkeyService` | All Windows |
-| [Theme Detection](theme-detection.md) | `UseThemeDetection()` | `IThemeService` | Windows 10+ |
-| [Auto-Start](auto-start.md) | `UseAutoStart()` | `IAutoStartService` | All Windows |
-| [Single Instance](single-instance.md) | `UseSingleInstance()` | `ISingleInstanceApp` | All Windows |
+| [Global Hotkeys](global-hotkeys.md) | `UseWindowsGlobalHotkeys()` | `IGlobalHotkeyService` | All Windows |
+| [Theme Detection](theme-detection.md) | `UseWindowsThemeDetection()` | `IThemeService` | Windows 10+ |
+| [Auto-Start](auto-start.md) | `UseWindowsAutoStart()` | `IAutoStartService` | All Windows |
+| [Single Instance](single-instance.md) | `UseWindowsSingleInstance()` | `ISingleInstanceApp` | All Windows |
 | [Window Management](window-management.md) | *(auto)* | `IWindowManager` | All |
 | [Dialogs](dialogs.md) | *(auto)* | `IDialogService` | All |
 | [Registry Config](registry-config.md) | *(auto)* | `IRegistryConfig` | Windows only |
 | [Event Bus](event-bus.md) | *(auto)* | `IEventBus` | All |
-| [Window Persistence](window-persistence.md) | `UseWindowPositionStorage<T>()` | `IRememberWindowState` | All Windows |
+| [Window Persistence](window-persistence.md) | `UseWindowsPositionStorage<T>()` | `IRememberWindowState` | All Windows |
 
 Features marked *(auto)* are registered automatically and don't require a builder call.

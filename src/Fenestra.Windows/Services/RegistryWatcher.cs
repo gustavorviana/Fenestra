@@ -2,7 +2,7 @@ using Fenestra.Core;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
 
-namespace Fenestra.Wpf.Services;
+namespace Fenestra.Windows.Services;
 
 /// <summary>
 /// Watches a registry key for value changes and invokes a callback when a change is detected.
@@ -64,7 +64,7 @@ internal class RegistryWatcher : FenestraComponent
                 int result = RegNotifyChangeKeyValue(hKey, false, REG_NOTIFY_CHANGE_LAST_SET, hEvent, true);
                 if (result != 0) { waitHandle.Dispose(); break; }
 
-                WaitHandle.WaitAny([waitHandle, _cts.Token.WaitHandle], 30000);
+                WaitHandle.WaitAny(new[] { waitHandle, _cts.Token.WaitHandle }, 30000);
                 waitHandle.Dispose();
 
                 if (_cts.IsCancellationRequested) break;

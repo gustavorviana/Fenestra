@@ -34,7 +34,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseTrayIcon();
+        builder.UseWindowsTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -83,7 +83,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseTrayIcon();
+        builder.UseWindowsTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -191,7 +191,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseTrayIcon();
+        builder.UseWindowsTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -252,7 +252,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseTrayIcon();
+        builder.UseWindowsTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -309,9 +309,9 @@ The `BalloonTipClicked` event on `ITrayIconService` fires when the user clicks t
 
 ## Minimize to Tray
 
-`UseMinimizeToTray()` intercepts the window close event on windows that implement `IMinimizeToTray`. Instead of closing, the window is hidden and the tray icon is shown. The user can restore the window by double-clicking the tray icon.
+`UseWindowsMinimizeToTray()` intercepts the window close event on windows that implement `IMinimizeToTray`. Instead of closing, the window is hidden and the tray icon is shown. The user can restore the window by double-clicking the tray icon.
 
-`UseMinimizeToTray()` implies `UseTrayIcon()` -- you do not need to call both.
+`UseWindowsMinimizeToTray()` implies `UseWindowsTrayIcon()` -- you do not need to call both.
 
 ```csharp
 using Fenestra.Core;
@@ -325,7 +325,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseMinimizeToTray();
+        builder.UseWindowsMinimizeToTray();
         builder.RegisterWindows();
     }
 
@@ -374,10 +374,10 @@ The window only truly closes when `Application.Current.Shutdown()` is called (e.
 
 ### MinimizeToTrayOptions
 
-Configure the behavior by passing an options delegate to `UseMinimizeToTray()`.
+Configure the behavior by passing an options delegate to `UseWindowsMinimizeToTray()`.
 
 ```csharp
-builder.UseMinimizeToTray(options =>
+builder.UseWindowsMinimizeToTray(options =>
 {
     options.AutoShowTrayIcon = true;       // Show tray icon when window hides (default: true)
     options.RestoreOnDoubleClick = true;    // Restore window on tray double-click (default: true)
@@ -404,7 +404,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseTrayIcon();
+        builder.UseWindowsTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -473,7 +473,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseTrayIcon();
+        builder.UseWindowsTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -560,5 +560,5 @@ Constructor: `new TrayMenuItem(string text, Action action)` creates an item with
 
 | Method | Description |
 |---|---|
-| `UseTrayIcon()` | Enables the system tray icon service |
-| `UseMinimizeToTray(Action<MinimizeToTrayOptions>?)` | Enables minimize-to-tray behavior. Implies `UseTrayIcon()`. |
+| `UseWindowsTrayIcon()` | Enables the system tray icon service |
+| `UseWindowsMinimizeToTray(Action<MinimizeToTrayOptions>?)` | Enables minimize-to-tray behavior. Implies `UseWindowsTrayIcon()`. |

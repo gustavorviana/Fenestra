@@ -13,7 +13,7 @@ Registers the application as a COM server so that clicking a toast notification 
 
 ## Overview
 
-By default, Windows toast notifications are fire-and-forget. If the user clicks a toast after the app has been closed, nothing happens. `UseToastActivation()` solves this by:
+By default, Windows toast notifications are fire-and-forget. If the user clicks a toast after the app has been closed, nothing happens. `UseWindowsToastActivation()` solves this by:
 
 1. Registering a COM server in the registry so Windows knows which EXE to launch.
 2. Creating a Start Menu shortcut with a `ToastActivatorCLSID` so Windows links toasts to the COM server.
@@ -35,8 +35,8 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
-        builder.UseToastActivation();
+        builder.UseWindowsToastNotifications();
+        builder.UseWindowsToastActivation();
         builder.RegisterWindows();
     }
 
@@ -69,7 +69,7 @@ public class MainWindow : Window
 }
 ```
 
-> **Note:** `UseToastActivation()` must be called after `UseToastNotifications()`.
+> **Note:** `UseWindowsToastActivation()` must be called after `UseWindowsToastNotifications()`.
 
 ## Explicit CLSID for Production
 
@@ -85,8 +85,8 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
-        builder.UseToastActivation(Guid.Parse("A1B2C3D4-E5F6-7890-ABCD-EF1234567890"));
+        builder.UseWindowsToastNotifications();
+        builder.UseWindowsToastActivation(Guid.Parse("A1B2C3D4-E5F6-7890-ABCD-EF1234567890"));
         builder.RegisterWindows();
     }
 
@@ -109,14 +109,14 @@ public class MainWindow : Window
 
 ## Important: CLSID and the Start Menu Shortcut
 
-Once `UseToastActivation()` writes the `ToastActivatorCLSID` to the Start Menu shortcut, Windows routes all toast activations through COM for that AUMID. If the CLSID changes or `UseToastActivation()` is removed without updating the shortcut, the old shortcut still references the stale CLSID and **all WinRT toast events (Activated, Dismissed) will stop firing** -- not just background activation, but in-app events too.
+Once `UseWindowsToastActivation()` writes the `ToastActivatorCLSID` to the Start Menu shortcut, Windows routes all toast activations through COM for that AUMID. If the CLSID changes or `UseWindowsToastActivation()` is removed without updating the shortcut, the old shortcut still references the stale CLSID and **all WinRT toast events (Activated, Dismissed) will stop firing** -- not just background activation, but in-app events too.
 
 The shortcut lives at:
 ```
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\{AppName}.lnk
 ```
 
-If you change the CLSID or remove `UseToastActivation()`, you must also update or recreate the shortcut so the old CLSID is cleared.
+If you change the CLSID or remove `UseWindowsToastActivation()`, you must also update or recreate the shortcut so the old CLSID is cleared.
 
 ## How It Works
 
@@ -153,8 +153,8 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
-        builder.UseToastActivation(Guid.Parse("64BD1DB5-C8C7-41D1-958F-30B13D3F18ED"));
+        builder.UseWindowsToastNotifications();
+        builder.UseWindowsToastActivation(Guid.Parse("64BD1DB5-C8C7-41D1-958F-30B13D3F18ED"));
         builder.RegisterWindows();
     }
 
@@ -227,8 +227,8 @@ public class MainWindow : Window
 
 | Method | Description |
 |---|---|
-| `UseToastActivation()` | Enables toast activation with a CLSID derived from the AppId |
-| `UseToastActivation(Guid)` | Enables toast activation with an explicit CLSID |
+| `UseWindowsToastActivation()` | Enables toast activation with a CLSID derived from the AppId |
+| `UseWindowsToastActivation(Guid)` | Enables toast activation with an explicit CLSID |
 
 ### IToastActivationRegistrar
 

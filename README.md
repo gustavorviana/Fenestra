@@ -83,7 +83,7 @@ public partial class MainWindow : Window, IRememberWindowState, IMinimizeToTray
 }
 ```
 
-`IRememberWindowState` persists the window's position and size across sessions. `IMinimizeToTray` makes the window minimize to the system tray instead of closing (requires `UseMinimizeToTray()` in the builder).
+`IRememberWindowState` persists the window's position and size across sessions. `IMinimizeToTray` makes the window minimize to the system tray instead of closing (requires `UseWindowsMinimizeToTray()` in the builder).
 
 **Step 3 -- Configure App.xaml**
 
@@ -116,7 +116,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseMinimizeToTray();
+        builder.UseWindowsMinimizeToTray();
         builder.RegisterWindows();
     }
 
@@ -218,7 +218,7 @@ using Fenestra.Wpf;
 
 var builder = FenestraApplication.CreateBuilder(args);
 builder.UseMainWindow<MainWindow>();
-builder.UseMinimizeToTray();
+builder.UseWindowsMinimizeToTray();
 builder.RegisterWindows();
 
 var app = builder.Build();
@@ -253,16 +253,16 @@ Fenestra is modular. Each feature is opt-in via the `FenestraBuilder`:
 |---|---|---|
 | App Info (name, version, GUID) | Automatic | [App Info](./app-info.md) |
 | Registry Configuration | Automatic | [Registry Config](./registry-config.md) |
-| Toast Notifications | `UseToastNotifications()` | [Toast Notifications](./toast-notifications.md) |
-| Toast Background Activation | `UseToastActivation()` | [Toast Activation](./toast-activation.md) |
+| Toast Notifications | `UseWindowsToastNotifications()` | [Toast Notifications](./toast-notifications.md) |
+| Toast Background Activation | `UseWindowsToastActivation()` | [Toast Activation](./toast-activation.md) |
 | Window State Persistence | Implement `IRememberWindowState` | [Window Management](./window-management.md) |
 | Dialog Service | Automatic | [Dialog Service](./dialog-service.md) |
-| System Tray Icon | `UseTrayIcon()` | [Tray Icon](./tray-icon.md) |
-| Minimize to Tray | `UseMinimizeToTray()` | [Tray Icon](./tray-icon.md) |
-| Single Instance | `UseSingleInstance()` | [Single Instance](./single-instance.md) |
-| Auto-Start (Windows startup) | `UseAutoStart()` | [Auto-Start](./auto-start.md) |
-| Global Hotkeys | `UseGlobalHotkeys()` | [Global Hotkeys](./global-hotkeys.md) |
-| Theme Detection (dark/light) | `UseThemeDetection()` | [Theme Detection](./theme-detection.md) |
+| System Tray Icon | `UseWindowsTrayIcon()` | [Tray Icon](./tray-icon.md) |
+| Minimize to Tray | `UseWindowsMinimizeToTray()` | [Tray Icon](./tray-icon.md) |
+| Single Instance | `UseWindowsSingleInstance()` | [Single Instance](./single-instance.md) |
+| Auto-Start (Windows startup) | `UseWindowsAutoStart()` | [Auto-Start](./auto-start.md) |
+| Global Hotkeys | `UseWindowsGlobalHotkeys()` | [Global Hotkeys](./global-hotkeys.md) |
+| Theme Detection (dark/light) | `UseWindowsThemeDetection()` | [Theme Detection](./theme-detection.md) |
 | Event Bus | Automatic | [Event Bus](./event-bus.md) |
 | Taskbar Progress | Automatic | [Taskbar Progress](./taskbar-progress.md) |
 | Platform Detection | Static class | [Platform](./platform.md) |
@@ -287,11 +287,11 @@ These services are always registered in the DI container, with no explicit opt-i
 
 These require a `Use*()` call on the builder:
 
-- `ITrayIconService` -- via `UseTrayIcon()` or `UseMinimizeToTray()`
-- `IToastService` -- via `UseToastNotifications()`
-- `IGlobalHotkeyService` -- via `UseGlobalHotkeys()`
-- `IAutoStartService` -- via `UseAutoStart()`
-- `IThemeService` -- via `UseThemeDetection()`
+- `ITrayIconService` -- via `UseWindowsTrayIcon()` or `UseWindowsMinimizeToTray()`
+- `IToastService` -- via `UseWindowsToastNotifications()`
+- `IGlobalHotkeyService` -- via `UseWindowsGlobalHotkeys()`
+- `IAutoStartService` -- via `UseWindowsAutoStart()`
+- `IThemeService` -- via `UseWindowsThemeDetection()`
 
 ## Architecture
 

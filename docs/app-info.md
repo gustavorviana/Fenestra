@@ -286,8 +286,8 @@ public partial class App : FenestraApp
     protected override void Configure(FenestraBuilder builder)
     {
         builder.UseAppInfo("My Dashboard", "com.company.dashboard", new Version(2, 5, 0));
-        builder.UseSingleInstance();
-        builder.UseAutoStart();
+        builder.UseWindowsSingleInstance();
+        builder.UseWindowsAutoStart();
         builder.RegisterWindows();
     }
 

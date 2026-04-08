@@ -1,10 +1,9 @@
 using Fenestra.Core.Models;
-using Fenestra.Windows;
 using Fenestra.Windows.Models;
 using Microsoft.Win32;
 using System.Text;
 
-namespace Fenestra.Wpf.Services;
+namespace Fenestra.Windows.Services;
 
 internal class AutoStartService : IAutoStartService
 {
@@ -16,6 +15,7 @@ internal class AutoStartService : IAutoStartService
 
     public AutoStartService(AppInfo appInfo)
     {
+        Platform.EnsureWindows();
         _appName = appInfo.AppId;
         _executablePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName
             ?? System.Reflection.Assembly.GetEntryAssembly()?.Location

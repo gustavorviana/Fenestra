@@ -14,7 +14,7 @@ Fenestra supports single-instance mode to prevent multiple copies of the applica
 
 ## Enabling Single Instance
 
-Call `UseSingleInstance()` on the builder during configuration.
+Call `UseWindowsSingleInstance()` on the builder during configuration.
 
 ```csharp
 using Fenestra.Wpf;
@@ -25,7 +25,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseSingleInstance();
+        builder.UseWindowsSingleInstance();
         builder.RegisterWindows();
     }
 
@@ -62,7 +62,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseSingleInstance();
+        builder.UseWindowsSingleInstance();
         builder.RegisterWindows();
         builder.Services.AddSingleton<ISingleInstanceApp, ArgumentHandler>();
     }
@@ -127,7 +127,7 @@ public partial class App : FenestraApp
     protected override void Configure(FenestraBuilder builder)
     {
         builder.UseAppName("FileViewer");
-        builder.UseSingleInstance();
+        builder.UseWindowsSingleInstance();
         builder.RegisterWindows();
         builder.Services.AddSingleton<ISingleInstanceApp, FileOpenHandler>();
     }

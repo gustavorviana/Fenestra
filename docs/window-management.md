@@ -358,7 +358,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseWindowPositionStorage<JsonWindowPositionStorage>();
+        builder.UseWindowsPositionStorage<JsonWindowPositionStorage>();
         builder.RegisterWindows();
     }
 

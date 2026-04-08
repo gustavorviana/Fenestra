@@ -21,6 +21,7 @@ internal sealed class TrayIconService : TrayIconServiceBase
 
     public TrayIconService(AppInfo appInfo, IServiceProvider services)
     {
+        Platform.EnsureWindows();
         MenuStyle = CreateDefaultMenuStyle();
         _appId = appInfo.AppId;
         _themeService = services.GetService(typeof(IThemeService)) as IThemeService;

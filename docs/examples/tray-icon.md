@@ -7,7 +7,7 @@
 ```csharp
 var app = FenestraBuilder.CreateDefault()
     .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseTrayIcon()
+    .UseWindowsTrayIcon()
     .Build();
 ```
 
@@ -98,8 +98,8 @@ Enable minimize-to-tray behavior for windows:
 ```csharp
 var app = FenestraBuilder.CreateDefault()
     .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseTrayIcon()
-    .UseMinimizeToTray()
+    .UseWindowsTrayIcon()
+    .UseWindowsMinimizeToTray()
     .Build();
 ```
 

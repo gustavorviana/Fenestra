@@ -14,6 +14,7 @@ internal class GlobalHotkeyService : IGlobalHotkeyService
 
     public GlobalHotkeyService()
     {
+        Platform.EnsureWindows();
         var parameters = new HwndSourceParameters("FenestraHotkeys")
         {
             Width = 0,

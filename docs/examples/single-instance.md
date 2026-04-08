@@ -7,7 +7,7 @@
 ```csharp
 var app = FenestraBuilder.CreateDefault()
     .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseSingleInstance()
+    .UseWindowsSingleInstance()
     .Build();
 ```
 

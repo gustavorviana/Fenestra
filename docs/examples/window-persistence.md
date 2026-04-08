@@ -9,7 +9,7 @@ Saves and restores window position, size, and state (maximized, normal) across a
 ```csharp
 var app = FenestraBuilder.CreateDefault()
     .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseWindowPositionStorage<RegistryWindowPositionStorage>()
+    .UseWindowsPositionStorage<RegistryWindowPositionStorage>()
     .Build();
 ```
 
@@ -46,5 +46,5 @@ public class JsonWindowPositionStorage : IWindowPositionStorage
 Then register it:
 
 ```csharp
-.UseWindowPositionStorage<JsonWindowPositionStorage>()
+.UseWindowsPositionStorage<JsonWindowPositionStorage>()
 ```

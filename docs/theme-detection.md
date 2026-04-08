@@ -16,7 +16,7 @@
 
 ## Enabling Theme Detection
 
-Call `UseThemeDetection()` on the builder.
+Call `UseWindowsThemeDetection()` on the builder.
 
 ```csharp
 using Fenestra.Wpf;
@@ -27,7 +27,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseThemeDetection();
+        builder.UseWindowsThemeDetection();
         builder.RegisterWindows();
     }
 
@@ -192,7 +192,7 @@ public partial class App : FenestraApp
     protected override void Configure(FenestraBuilder builder)
     {
         builder.UseAppName("ThemeApp");
-        builder.UseThemeDetection();
+        builder.UseWindowsThemeDetection();
         builder.RegisterWindows();
     }
 

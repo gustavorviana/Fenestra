@@ -1,10 +1,8 @@
 using Fenestra.Core;
-using Fenestra.Windows;
 using Fenestra.Windows.Models;
 using Microsoft.Win32;
-using System.Windows;
 
-namespace Fenestra.Wpf.Services;
+namespace Fenestra.Windows.Services;
 
 /// <summary>
 /// Monitors the Windows app theme (dark/light) and raises events on change.
@@ -15,6 +13,7 @@ internal class ThemeService : FenestraComponent, IThemeService
     private const string PersonalizeKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
     private const string ValueName = "AppsUseLightTheme";
 
+    private readonly IThreadContext _threadContext;
     private RegistryWatcher? _watcher;
     private AppThemeMode _mode;
     private bool _isDarkMode;
@@ -28,8 +27,10 @@ internal class ThemeService : FenestraComponent, IThemeService
     /// <inheritdoc />
     public event BusHandler<bool>? ThemeChanged;
 
-    public ThemeService()
+    public ThemeService(IThreadContext threadContext)
     {
+        Platform.EnsureWindows10();
+        _threadContext = threadContext;
         SetMode(AppThemeMode.System);
     }
 
@@ -61,7 +62,7 @@ internal class ThemeService : FenestraComponent, IThemeService
         _isDarkMode = isDark;
 
         if (changed)
-            Application.Current?.Dispatcher.BeginInvoke(() => ThemeChanged?.Invoke(_isDarkMode));
+            _ = _threadContext.InvokeAsync(() => ThemeChanged?.Invoke(_isDarkMode));
     }
 
     private void StartWatching()

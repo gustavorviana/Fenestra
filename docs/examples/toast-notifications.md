@@ -33,8 +33,8 @@ using Fenestra.Windows.Wpf;
 
 var builder = FenestraBuilder.CreateDefault()
     .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseToastNotifications();       // Registers IToastService
-    // .UseToastActivation();       // Optional: enables background activation when app is closed
+    .UseWindowsToastNotifications();       // Registers IToastService
+    // .UseWindowsToastActivation();       // Optional: enables background activation when app is closed
 
 var app = builder.Build();
 app.Run();

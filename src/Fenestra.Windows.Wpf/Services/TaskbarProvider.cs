@@ -10,6 +10,7 @@ internal class TaskbarProvider : ITaskbarProvider
 
     public ITaskbarProgress Create(object window)
     {
+        Platform.EnsureWindows7();
         if (window is not Window wpfWindow)
             throw new ArgumentException("Expected a WPF Window instance.", nameof(window));
 

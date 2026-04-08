@@ -138,70 +138,10 @@ public class FenestraBuilder
     }
 
     /// <summary>
-    /// Enables the system tray icon service.
-    /// </summary>
-    public FenestraBuilder UseTrayIcon()
-    {
-        Services.AddSingleton<ITrayIconService, TrayIconService>();
-        return this;
-    }
-
-    /// <summary>
-    /// Enables minimize-to-tray behavior for windows that implement IMinimizeToTray.
-    /// Implies UseTrayIcon().
-    /// </summary>
-    public FenestraBuilder UseMinimizeToTray(Action<MinimizeToTrayOptions>? configure = null)
-    {
-        UseTrayIcon();
-        var options = new MinimizeToTrayOptions();
-        configure?.Invoke(options);
-        Services.AddSingleton(options);
-        Services.AddSingleton<MinimizeToTrayService>();
-        return this;
-    }
-
-    /// <summary>
-    /// Enables single instance mode. Only one instance of the application can run at a time.
-    /// Arguments from subsequent launches are forwarded to the running instance via <see cref="ISingleInstanceApp"/>.
-    /// </summary>
-    public FenestraBuilder UseSingleInstance()
-    {
-        Services.AddSingleton<SingleInstanceGuard>();
-        return this;
-    }
-
-    /// <summary>
-    /// Enables system theme detection. Monitors dark/light mode changes via <see cref="IThemeService"/>.
-    /// </summary>
-    public FenestraBuilder UseThemeDetection()
-    {
-        Services.AddSingleton<IThemeService, ThemeService>();
-        return this;
-    }
-
-    /// <summary>
-    /// Enables the auto-start service for managing Windows startup registration via <see cref="IAutoStartService"/>.
-    /// </summary>
-    public FenestraBuilder UseAutoStart()
-    {
-        Services.AddSingleton<IAutoStartService, AutoStartService>();
-        return this;
-    }
-
-    /// <summary>
-    /// Enables global hotkey registration via <see cref="IGlobalHotkeyService"/>.
-    /// </summary>
-    public FenestraBuilder UseGlobalHotkeys()
-    {
-        Services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
-        return this;
-    }
-
-    /// <summary>
     /// Uses a custom <see cref="IWindowPositionStorage"/> implementation.
     /// When not set, window positions are stored in the Windows Registry via <see cref="IRegistryConfig"/>.
     /// </summary>
-    public FenestraBuilder UseWindowPositionStorage<T>() where T : class, IWindowPositionStorage
+    public FenestraBuilder UseWindowsPositionStorage<T>() where T : class, IWindowPositionStorage
     {
         _windowPositionStorageType = typeof(T);
         return this;

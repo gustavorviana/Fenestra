@@ -1,5 +1,6 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
+using Fenestra.Windows;
 using Fenestra.Wpf.Native;
 using System.Windows;
 
@@ -12,6 +13,7 @@ internal class WindowStateService
 
     public WindowStateService(IWindowPositionStorage storage)
     {
+        Platform.EnsureWindows();
         _storage = storage;
     }
 

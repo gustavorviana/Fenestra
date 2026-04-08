@@ -16,7 +16,7 @@
 
 ## Enabling Auto Start
 
-Call `UseAutoStart()` on the builder to register the service.
+Call `UseWindowsAutoStart()` on the builder to register the service.
 
 ```csharp
 using Fenestra.Wpf;
@@ -27,7 +27,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseAutoStart();
+        builder.UseWindowsAutoStart();
         builder.RegisterWindows();
     }
 
@@ -189,7 +189,7 @@ public partial class App : FenestraApp
     protected override void Configure(FenestraBuilder builder)
     {
         builder.UseAppName("MyDashboard");
-        builder.UseAutoStart();
+        builder.UseWindowsAutoStart();
         builder.RegisterWindows();
     }
 

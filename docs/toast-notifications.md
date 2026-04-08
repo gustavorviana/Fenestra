@@ -26,7 +26,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -74,7 +74,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -125,7 +125,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -200,7 +200,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -265,7 +265,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -313,7 +313,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -384,7 +384,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -463,7 +463,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseToastNotifications();
+        builder.UseWindowsToastNotifications();
         builder.RegisterWindows();
     }
 

@@ -12,7 +12,7 @@ namespace Fenestra.Windows.Services;
 ///   <item>Start Menu shortcut with <c>ToastActivatorCLSID</c> so Windows links toasts to the COM server.</item>
 ///   <item>Runtime COM class factory (<c>CoRegisterClassObject</c>) so Windows can deliver the activation callback.</item>
 /// </list>
-/// Opt in via <c>builder.UseToastActivation()</c>.
+/// Opt in via <c>builder.UseWindowsToastActivation()</c>.
 /// </summary>
 internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
 {

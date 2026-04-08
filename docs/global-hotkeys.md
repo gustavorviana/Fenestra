@@ -18,7 +18,7 @@ The service implements `IDisposable` and automatically unregisters all hotkeys w
 
 ## Enabling Global Hotkeys
 
-Call `UseGlobalHotkeys()` on the builder.
+Call `UseWindowsGlobalHotkeys()` on the builder.
 
 ```csharp
 using Fenestra.Wpf;
@@ -29,7 +29,7 @@ public partial class App : FenestraApp
 {
     protected override void Configure(FenestraBuilder builder)
     {
-        builder.UseGlobalHotkeys();
+        builder.UseWindowsGlobalHotkeys();
         builder.RegisterWindows();
     }
 
@@ -183,7 +183,7 @@ public partial class App : FenestraApp
     protected override void Configure(FenestraBuilder builder)
     {
         builder.UseAppName("HotkeyApp");
-        builder.UseGlobalHotkeys();
+        builder.UseWindowsGlobalHotkeys();
         builder.RegisterWindows();
     }
 

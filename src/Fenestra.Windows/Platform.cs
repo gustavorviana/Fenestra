@@ -31,6 +31,11 @@ public static class Platform
     public static Version OsVersion => _osVersion;
 
     /// <summary>
+    /// Gets whether the current OS is Windows 7 or later (NT 6.1+).
+    /// </summary>
+    public static bool IsWindows7OrLater => _isWindows && (_osVersion.Major > 6 || (_osVersion.Major == 6 && _osVersion.Minor >= 1));
+
+    /// <summary>
     /// Gets whether the current OS is Windows 10 or later (build 10240+).
     /// </summary>
     public static bool IsWindows10OrLater => _isWindows && _osVersion.Major >= 10;
@@ -42,6 +47,17 @@ public static class Platform
     {
         if (!_isWindows)
             throw new PlatformNotSupportedException("This feature requires Windows.");
+    }
+
+    /// <summary>
+    /// Throws <see cref="PlatformNotSupportedException"/> if the current OS is not Windows 7 or later.
+    /// </summary>
+    public static void EnsureWindows7()
+    {
+        EnsureWindows();
+
+        if (!IsWindows7OrLater)
+            throw new PlatformNotSupportedException("This feature requires Windows 7 or later.");
     }
 
     /// <summary>
