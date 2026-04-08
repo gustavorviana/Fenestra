@@ -4,45 +4,44 @@ namespace Fenestra.Windows.Native;
 
 /// <summary>
 /// WinRT activation helpers and COM pointer conversion utilities.
+/// All methods returning <see cref="ComRef{T}"/> transfer ownership — caller must <c>using</c> or <c>Dispose</c>.
 /// </summary>
 internal static class WinRtToastInterop
 {
-    // --- WinRT Activation ---
-
-    /// <summary>Activates a WinRT class and returns an RCW cast to <typeparamref name="T"/>.</summary>
-    public static T? ActivateInstanceAs<T>(string className) where T : class
+    /// <summary>Activates a WinRT class and returns an RCW wrapped in <see cref="ComRef{T}"/>.</summary>
+    public static ComRef<T>? ActivateInstance<T>(string className) where T : class
     {
         using var hClass = HStringHandle.Create(className);
         var hr = RoActivateInstance(hClass, out var instance);
         if (hr != 0 || instance == IntPtr.Zero) return null;
-        try { return (T)Marshal.GetObjectForIUnknown(instance); }
+        try { return new ComRef<T>((T)Marshal.GetObjectForIUnknown(instance)); }
         catch { return null; }
         finally { Marshal.Release(instance); }
     }
 
-    /// <summary>Gets an activation factory RCW cast to <typeparamref name="T"/>.</summary>
-    public static T? GetActivationFactoryAs<T>(string className, Guid iid) where T : class
+    /// <summary>Gets an activation factory RCW wrapped in <see cref="ComRef{T}"/>.</summary>
+    public static ComRef<T>? GetActivationFactory<T>(string className, Guid iid) where T : class
     {
         using var hClass = HStringHandle.Create(className);
         var hr = RoGetActivationFactory(hClass, ref iid, out var factory);
         if (hr != 0 || factory == IntPtr.Zero) return null;
-        try { return (T)Marshal.GetObjectForIUnknown(factory); }
+        try { return new ComRef<T>((T)Marshal.GetObjectForIUnknown(factory)); }
         catch { return null; }
         finally { Marshal.Release(factory); }
     }
 
     /// <summary>
-    /// Takes ownership of a COM out-parameter pointer, wraps it in an RCW, and releases the original reference.
-    /// Caller must <c>Marshal.ReleaseComObject</c> the returned object when done.
+    /// Takes ownership of a COM out-parameter pointer, wraps in RCW + <see cref="ComRef{T}"/>,
+    /// and releases the original pointer. Caller must <c>Dispose</c> the returned ref.
     /// </summary>
-    public static T? CastComPointer<T>(IntPtr pUnk) where T : class
+    public static ComRef<T>? CastPointer<T>(IntPtr pUnk) where T : class
     {
         if (pUnk == IntPtr.Zero) return null;
         object? rcw = null;
         try
         {
             rcw = Marshal.GetObjectForIUnknown(pUnk);
-            return (T)rcw;
+            return new ComRef<T>((T)rcw);
         }
         catch
         {
@@ -53,24 +52,14 @@ internal static class WinRtToastInterop
     }
 
     /// <summary>
-    /// Creates a temporary RCW from a borrowed COM pointer (does NOT release the original pointer).
-    /// Caller must <c>Marshal.ReleaseComObject</c> the returned object when done.
-    /// Returns null if the cast to <typeparamref name="T"/> fails (interface not supported).
+    /// Wraps a borrowed COM pointer (one you don't own) in an RCW + <see cref="ComRef{T}"/>.
+    /// AddRefs first so <see cref="CastPointer{T}"/>'s Release is balanced.
     /// </summary>
-    public static T? BorrowComPointer<T>(IntPtr pUnk) where T : class
+    public static ComRef<T>? BorrowPointer<T>(IntPtr pUnk) where T : class
     {
         if (pUnk == IntPtr.Zero) return null;
-        object? rcw = null;
-        try
-        {
-            rcw = Marshal.GetObjectForIUnknown(pUnk);
-            return (T)rcw;
-        }
-        catch
-        {
-            if (rcw != null) Marshal.ReleaseComObject(rcw);
-            return null;
-        }
+        Marshal.AddRef(pUnk);
+        return CastPointer<T>(pUnk);
     }
 
     // --- P/Invoke ---

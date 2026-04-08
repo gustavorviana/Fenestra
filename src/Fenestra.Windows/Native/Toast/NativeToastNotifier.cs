@@ -1,188 +1,237 @@
 using System.Runtime.InteropServices;
+using Fenestra.Windows.Models;
 using static Fenestra.Windows.Native.Toast.ToastInteropConstants;
 
 namespace Fenestra.Windows.Native.Toast;
 
 /// <summary>
 /// Facade for the Windows toast notification system.
-/// Delegates to <see cref="NativeToastDisplay"/> (show/hide/create),
-/// <see cref="NativeToastUpdater"/> (data binding updates), and
-/// <see cref="NativeToastHistory"/> (action center management).
+/// Handles show/hide, property get/set, event subscription, and data updates
+/// directly through WinRT COM interfaces.
 /// </summary>
 internal sealed class NativeToastNotifier : IDisposable
 {
-    private readonly object _notifierRcw;
     private readonly IToastNotifier _notifier;
-    private readonly NativeToastDisplay _display;
-    private readonly NativeToastUpdater? _updater;
     private bool _disposed;
-
-    public bool IsValid => true;
 
     public NativeToastNotifier(string appId)
     {
-        var manager = WinRtToastInterop.GetActivationFactoryAs<IToastNotificationManagerStatics>(
+        using var manager = WinRtToastInterop.GetActivationFactory<IToastNotificationManagerStatics>(
             "Windows.UI.Notifications.ToastNotificationManager", IID_IToastNotificationManagerStatics)
             ?? throw new InvalidOperationException("Failed to get ToastNotificationManager activation factory.");
 
-        try
+        var hr = manager.Value.CreateToastNotifier(out var pNotifier);
+        if (hr != 0 || pNotifier == IntPtr.Zero)
         {
-            IntPtr pNotifier;
-
-            // Try parameterless CreateToastNotifier first, fall back to CreateToastNotifierWithId
-            var hr = manager.CreateToastNotifier(out pNotifier);
+            hr = manager.Value.CreateToastNotifierWithId(appId, out pNotifier);
             if (hr != 0 || pNotifier == IntPtr.Zero)
-            {
-                using var hAppId = HStringHandle.Create(appId);
-                hr = manager.CreateToastNotifierWithId(hAppId.DangerousGetHandle(), out pNotifier);
-                if (hr != 0 || pNotifier == IntPtr.Zero)
-                    throw new InvalidOperationException($"CreateToastNotifier failed for appId '{appId}'.");
-            }
-
-            _notifierRcw = WinRtToastInterop.CastComPointer<IToastNotifier>(pNotifier)
-                ?? throw new InvalidOperationException("Failed to wrap IToastNotifier.");
-            _notifier = (IToastNotifier)_notifierRcw;
+                throw new InvalidOperationException($"CreateToastNotifier failed for appId '{appId}'.");
         }
-        finally { Marshal.ReleaseComObject(manager); }
 
-        _display = new NativeToastDisplay(_notifier);
-        _updater = NativeToastUpdater.TryCreate(_notifier);
+        _notifier = WinRtToastInterop.CastPointer<IToastNotifier>(pNotifier)?.Value
+            ?? throw new InvalidOperationException("Failed to wrap IToastNotifier.");
     }
 
-    public void Show(ComPointerHandle pNotification) => _display.Show(pNotification);
-    public void Hide(ComPointerHandle pNotification) => _display.Hide(pNotification);
+    // --- Show / Hide ---
 
-    // --- Properties (set on notification before Show) ---
-
-    public void SetTag(ComPointerHandle pNotif, string tag)
+    public void Show(IToastNotification notification)
     {
-        var notif2 = WinRtToastInterop.BorrowComPointer<IToastNotification2>(pNotif.DangerousGetHandle());
-        if (notif2 == null) return;
-        try
-        {
-            using var h = HStringHandle.Create(tag);
-            notif2.put_Tag(h.DangerousGetHandle());
-        }
-        finally { Marshal.ReleaseComObject(notif2); }
+        var hr = _notifier.Show(notification);
+        if (hr < 0) throw new COMException($"IToastNotifier.Show failed. HRESULT=0x{hr:X8}", hr);
     }
 
-    public void SetGroup(ComPointerHandle pNotif, string group)
+    public void Hide(IToastNotification notification)
     {
-        var notif2 = WinRtToastInterop.BorrowComPointer<IToastNotification2>(pNotif.DangerousGetHandle());
-        if (notif2 == null) return;
-        try
-        {
-            using var h = HStringHandle.Create(group);
-            notif2.put_Group(h.DangerousGetHandle());
-        }
-        finally { Marshal.ReleaseComObject(notif2); }
+        var hr = _notifier.Hide(notification);
+        if (hr < 0) throw new COMException($"IToastNotifier.Hide failed. HRESULT=0x{hr:X8}", hr);
     }
 
-    public void SetSuppressPopup(ComPointerHandle pNotif, bool value)
+    // --- Notifier queries ---
+
+    public NotificationSetting GetSetting()
     {
-        var notif2 = WinRtToastInterop.BorrowComPointer<IToastNotification2>(pNotif.DangerousGetHandle());
-        if (notif2 == null) return;
-        try { notif2.put_SuppressPopup(value ? 1 : 0); }
-        finally { Marshal.ReleaseComObject(notif2); }
+        _notifier.get_Setting(out var setting);
+        return (NotificationSetting)setting;
     }
 
-    public void SetPriority(ComPointerHandle pNotif, int priority)
+    // --- Notification property setters ---
+
+    public void SetTag(IToastNotification notification, string tag)
     {
-        var notif4 = WinRtToastInterop.BorrowComPointer<IToastNotification4>(pNotif.DangerousGetHandle());
-        if (notif4 == null) return;
-        try { notif4.put_Priority(priority); }
-        finally { Marshal.ReleaseComObject(notif4); }
+        if (notification is IToastNotification2 n) n.put_Tag(tag);
     }
 
-    public void SetExpiresOnReboot(ComPointerHandle pNotif, bool value)
+    public void SetGroup(IToastNotification notification, string group)
     {
-        var notif6 = WinRtToastInterop.BorrowComPointer<IToastNotification6>(pNotif.DangerousGetHandle());
-        if (notif6 == null) return;
-        try { notif6.put_ExpiresOnReboot(value ? 1 : 0); }
-        finally { Marshal.ReleaseComObject(notif6); }
+        if (notification is IToastNotification2 n) n.put_Group(group);
     }
 
-    public void SetExpirationTime(ComPointerHandle pNotif, DateTimeOffset expirationTime)
+    public void SetSuppressPopup(IToastNotification notification, bool value)
     {
-        var notif = WinRtToastInterop.BorrowComPointer<IToastNotification>(pNotif.DangerousGetHandle());
-        if (notif == null) return;
-
-        try
-        {
-            using var pBoxed = BoxDateTime(expirationTime);
-            if (pBoxed == null) return;
-
-            notif.put_ExpirationTime(pBoxed.DangerousGetHandle());
-        }
-        finally { Marshal.ReleaseComObject(notif); }
+        if (notification is IToastNotification2 n) n.put_SuppressPopup(value ? 1 : 0);
     }
+
+    public void SetPriority(IToastNotification notification, ToastPriority priority)
+    {
+        if (notification is IToastNotification4 n) n.put_Priority((int)priority);
+    }
+
+    public void SetExpiresOnReboot(IToastNotification notification, bool value)
+    {
+        if (notification is IToastNotification6 n) n.put_ExpiresOnReboot(value ? 1 : 0);
+    }
+
+    public void SetExpirationTime(IToastNotification notification, DateTimeOffset expirationTime)
+    {
+        var pBoxed = BoxDateTime(expirationTime);
+        if (pBoxed == IntPtr.Zero) return;
+        try { notification.put_ExpirationTime(pBoxed); }
+        finally { Marshal.Release(pBoxed); }
+    }
+
+    public void SetNotificationMirroring(IToastNotification notification, NotificationMirroring value)
+    {
+        if (notification is IToastNotification3 n) n.put_NotificationMirroring((int)value);
+    }
+
+    public void SetRemoteId(IToastNotification notification, string remoteId)
+    {
+        if (notification is IToastNotification3 n) n.put_RemoteId(remoteId);
+    }
+
+    // --- Notification property getters ---
+
+    public string? GetTag(IToastNotification notification)
+        => notification is IToastNotification2 n && n.get_Tag(out var r) == 0 ? r : null;
+
+    public string? GetGroup(IToastNotification notification)
+        => notification is IToastNotification2 n && n.get_Group(out var r) == 0 ? r : null;
+
+    public bool GetSuppressPopup(IToastNotification notification)
+        => notification is IToastNotification2 n && n.get_SuppressPopup(out var r) == 0 && r != 0;
+
+    public ToastPriority GetPriority(IToastNotification notification)
+        => notification is IToastNotification4 n && n.get_Priority(out var r) == 0 ? (ToastPriority)r : ToastPriority.Default;
+
+    public bool GetExpiresOnReboot(IToastNotification notification)
+        => notification is IToastNotification6 n && n.get_ExpiresOnReboot(out var r) == 0 && r != 0;
+
+    public NotificationMirroring GetNotificationMirroring(IToastNotification notification)
+        => notification is IToastNotification3 n && n.get_NotificationMirroring(out var r) == 0 ? (NotificationMirroring)r : NotificationMirroring.Allowed;
+
+    public string? GetRemoteId(IToastNotification notification)
+        => notification is IToastNotification3 n && n.get_RemoteId(out var r) == 0 ? r : null;
 
     // --- Events ---
 
-    public long AddActivatedHandler(ComPointerHandle pNotif, IntPtr pHandler)
+    public long AddActivatedHandler(IToastNotification notification, IntPtr pHandler)
     {
-        var notif = WinRtToastInterop.BorrowComPointer<IToastNotification>(pNotif.DangerousGetHandle());
-        if (notif == null) return 0;
-        try
-        {
-            notif.add_Activated(pHandler, out var token);
-            return token;
-        }
-        finally { Marshal.ReleaseComObject(notif); }
+        notification.add_Activated(pHandler, out var token);
+        return token;
     }
 
-    public long AddDismissedHandler(ComPointerHandle pNotif, IntPtr pHandler)
+    public long AddDismissedHandler(IToastNotification notification, IntPtr pHandler)
     {
-        var notif = WinRtToastInterop.BorrowComPointer<IToastNotification>(pNotif.DangerousGetHandle());
-        if (notif == null) return 0;
-        try
-        {
-            notif.add_Dismissed(pHandler, out var token);
-            return token;
-        }
-        finally { Marshal.ReleaseComObject(notif); }
+        notification.add_Dismissed(pHandler, out var token);
+        return token;
     }
 
-    public long AddFailedHandler(ComPointerHandle pNotif, IntPtr pHandler)
+    public long AddFailedHandler(IToastNotification notification, IntPtr pHandler)
     {
-        var notif = WinRtToastInterop.BorrowComPointer<IToastNotification>(pNotif.DangerousGetHandle());
-        if (notif == null) return 0;
-        try
-        {
-            notif.add_Failed(pHandler, out var token);
-            return token;
-        }
-        finally { Marshal.ReleaseComObject(notif); }
+        notification.add_Failed(pHandler, out var token);
+        return token;
+    }
+
+    // --- Scheduling ---
+
+    public IScheduledToastNotification CreateScheduledToast(object xmlDoc, DateTimeOffset deliveryTime)
+    {
+        using var factory = WinRtToastInterop.GetActivationFactory<IScheduledToastNotificationFactory>(
+            "Windows.UI.Notifications.ScheduledToastNotification", IID_IScheduledToastNotificationFactory)
+            ?? throw new InvalidOperationException("Failed to get ScheduledToastNotification factory.");
+
+        var hr = factory.Value.CreateScheduledToastNotification(xmlDoc, deliveryTime.UtcDateTime.ToFileTimeUtc(), out var pResult);
+        if (hr < 0) throw new COMException($"CreateScheduledToastNotification failed. HRESULT=0x{hr:X8}", hr);
+
+        return WinRtToastInterop.CastPointer<IScheduledToastNotification>(pResult)?.Value
+            ?? throw new InvalidOperationException("Failed to wrap IScheduledToastNotification.");
+    }
+
+    public IScheduledToastNotification CreateScheduledToastRecurring(object xmlDoc, DateTimeOffset deliveryTime, TimeSpan snoozeInterval, uint maxSnoozeCount)
+    {
+        using var factory = WinRtToastInterop.GetActivationFactory<IScheduledToastNotificationFactory>(
+            "Windows.UI.Notifications.ScheduledToastNotification", IID_IScheduledToastNotificationFactory)
+            ?? throw new InvalidOperationException("Failed to get ScheduledToastNotification factory.");
+
+        var hr = factory.Value.CreateScheduledToastNotificationRecurring(
+            xmlDoc, deliveryTime.UtcDateTime.ToFileTimeUtc(), snoozeInterval.Ticks, maxSnoozeCount, out var pResult);
+        if (hr < 0) throw new COMException($"CreateScheduledToastNotificationRecurring failed. HRESULT=0x{hr:X8}", hr);
+
+        return WinRtToastInterop.CastPointer<IScheduledToastNotification>(pResult)?.Value
+            ?? throw new InvalidOperationException("Failed to wrap IScheduledToastNotification.");
+    }
+
+    public void AddToSchedule(IScheduledToastNotification scheduled)
+    {
+        var hr = _notifier.AddToSchedule(scheduled);
+        if (hr < 0) throw new COMException($"AddToSchedule failed. HRESULT=0x{hr:X8}", hr);
+    }
+
+    public void RemoveFromSchedule(IScheduledToastNotification scheduled)
+    {
+        var hr = _notifier.RemoveFromSchedule(scheduled);
+        if (hr < 0) throw new COMException($"RemoveFromSchedule failed. HRESULT=0x{hr:X8}", hr);
     }
 
     // --- Update ---
 
-    public int Update(string tag, string? group, Dictionary<string, string> data, uint sequenceNumber)
-        => _updater?.Update(tag, group, data, sequenceNumber) ?? NotificationUpdateResult_Failed;
+    public NotificationUpdateResult Update(string tag, string? group, Dictionary<string, string> data, uint sequenceNumber)
+    {
+        if (_notifier is not IToastNotifier2 notifier2)
+            return NotificationUpdateResult.Failed;
 
-    // --- History ---
+        using var notifData = CreateNotificationData(data, sequenceNumber);
+        if (notifData == null) return NotificationUpdateResult.Failed;
 
-    public void HistoryRemove(string tag) => NativeToastHistory.Remove(tag);
-    public void HistoryRemoveGrouped(string tag, string group) => NativeToastHistory.RemoveGrouped(tag, group);
-    public void HistoryRemoveGroup(string group) => NativeToastHistory.RemoveGroup(group);
-    public void HistoryClear() => NativeToastHistory.Clear();
-    public void HistoryClearWithId(string appId) => NativeToastHistory.ClearWithId(appId);
+        int result;
+        if (group != null)
+            notifier2.UpdateWithTagAndGroup(notifData.Value, tag, group, out result);
+        else
+            notifier2.UpdateWithTag(notifData.Value, tag, out result);
+
+        return (NotificationUpdateResult)result;
+    }
 
     // --- Private ---
 
-    private static ComPointerHandle? BoxDateTime(DateTimeOffset value)
+    private static ComRef<INotificationData>? CreateNotificationData(Dictionary<string, string> data, uint sequenceNumber)
     {
-        var factory = WinRtToastInterop.GetActivationFactoryAs<IPropertyValueStatics>(
-            "Windows.Foundation.PropertyValue", IID_IPropertyValueStatics);
-        if (factory == null) return null;
+        var notifData = WinRtToastInterop.ActivateInstance<INotificationData>("Windows.UI.Notifications.NotificationData");
+        if (notifData == null) return null;
 
-        try
+        notifData.Value.put_SequenceNumber(sequenceNumber);
+
+        if (notifData.Value.get_Values(out var map) == 0 && map != null)
         {
-            long winrtDateTime = value.UtcDateTime.ToFileTimeUtc();
-            var hr = factory.CreateDateTime(winrtDateTime, out var result);
-            return hr == 0 && result != IntPtr.Zero ? new ComPointerHandle(result) : null;
+            try
+            {
+                foreach (var kv in data)
+                    map.Insert(kv.Key, kv.Value, out _);
+            }
+            finally { Marshal.ReleaseComObject(map); }
         }
-        finally { Marshal.ReleaseComObject(factory); }
+
+        return notifData;
+    }
+
+    private static IntPtr BoxDateTime(DateTimeOffset value)
+    {
+        using var factory = WinRtToastInterop.GetActivationFactory<IPropertyValueStatics>(
+            "Windows.Foundation.PropertyValue", IID_IPropertyValueStatics);
+        if (factory == null) return IntPtr.Zero;
+
+        var hr = factory.Value.CreateDateTime(value.UtcDateTime.ToFileTimeUtc(), out var result);
+        return hr == 0 ? result : IntPtr.Zero;
     }
 
     // --- Dispose ---
@@ -191,6 +240,6 @@ internal sealed class NativeToastNotifier : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        Marshal.ReleaseComObject(_notifierRcw);
+        Marshal.ReleaseComObject(_notifier);
     }
 }

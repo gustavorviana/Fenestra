@@ -12,41 +12,33 @@ internal class XmlToast : FenestraComponent
 
     public XmlToast(ToastContent toast)
     {
-        _xmlDoc = WinRtToastInterop.ActivateInstanceAs<IXmlDocumentIO>("Windows.Data.Xml.Dom.XmlDocument")
+        _xmlDoc = WinRtToastInterop.ActivateInstance<IXmlDocumentIO>("Windows.Data.Xml.Dom.XmlDocument")?.Value
             ?? throw new InvalidOperationException("RoActivateInstance failed for XmlDocument.");
 
         Content = toast;
 
         var xml = ToastXmlBuilder.Build(toast, toast.ProgressTracker != null);
-        using var hXml = HStringHandle.Create(xml);
-        var hr = ((IXmlDocumentIO)_xmlDoc).LoadXml(hXml.DangerousGetHandle());
+        var hr = ((IXmlDocumentIO)_xmlDoc).LoadXml(xml);
         if (hr < 0) throw new COMException($"LoadXml failed. HRESULT=0x{hr:X8}", hr);
     }
 
     public InternalNotificationHandle CreateNotification(NativeToastNotifier notifier)
     {
-        return new InternalNotificationHandle(notifier, Content, CreateNotificationSafeHandle());
+        return new InternalNotificationHandle(notifier, Content, CreateNotificationRcw());
     }
 
-    public ComPointerHandle CreateNotificationSafeHandle()
+    public IToastNotification CreateNotificationRcw()
     {
-        var factory = WinRtToastInterop.GetActivationFactoryAs<IToastNotificationFactory>(
+        using var factory = WinRtToastInterop.GetActivationFactory<IToastNotificationFactory>(
             "Windows.UI.Notifications.ToastNotification", ToastInteropConstants.IID_IToastNotificationFactory)
             ?? throw new InvalidOperationException("Failed to get ToastNotification factory.");
 
-        try
-        {
-            var pContent = Marshal.GetIUnknownForObject(_xmlDoc);
-            try
-            {
-                var hr = factory.CreateToastNotification(pContent, out var pNotif);
-                if (hr < 0) throw new COMException($"CreateToastNotification failed. HRESULT=0x{hr:X8}", hr);
-                if (pNotif == IntPtr.Zero) throw new InvalidOperationException("CreateToastNotification returned null.");
-                return new ComPointerHandle(pNotif);
-            }
-            finally { Marshal.Release(pContent); }
-        }
-        finally { Marshal.ReleaseComObject(factory); }
+        var hr = factory.Value.CreateToastNotification(_xmlDoc, out var pNotif);
+        if (hr < 0) throw new COMException($"CreateToastNotification failed. HRESULT=0x{hr:X8}", hr);
+        if (pNotif == IntPtr.Zero) throw new InvalidOperationException("CreateToastNotification returned null.");
+
+        return WinRtToastInterop.CastPointer<IToastNotification>(pNotif)?.Value
+            ?? throw new InvalidOperationException("Failed to wrap IToastNotification.");
     }
 
     protected override void Dispose(bool disposing)

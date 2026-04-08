@@ -8,7 +8,8 @@ namespace Fenestra.Windows.Services;
 
 internal class InternalNotificationHandle : FenestraComponent
 {
-    private ComPointerHandle _handle;
+    internal NativeToastHistory ToastHistory { get; }
+    private IToastNotification _notification;
     private IntPtr _activatedHandler;
     private IntPtr _dismissedHandler;
     private IntPtr _failedHandler;
@@ -25,16 +26,18 @@ internal class InternalNotificationHandle : FenestraComponent
     public Action<ToastDismissalReason>? OnDismissed { get; set; }
     public Action<int>? OnFailed { get; set; }
 
-    public InternalNotificationHandle(NativeToastNotifier notifier, ToastContent content, ComPointerHandle handle)
+    public InternalNotificationHandle(NativeToastNotifier notifier, ToastContent content, IToastNotification notification)
     {
         Notifier = notifier;
-        _handle = handle;
+        _notification = notification;
+        ToastHistory = new NativeToastHistory();
+
         CaptureAndApplyProperties(content);
     }
 
     public void Show(ToastProgressTracker? tracker)
     {
-        Notifier.Show(_handle);
+        Notifier.Show(_notification);
         RegisterEvents();
 
         if (tracker == null)
@@ -65,19 +68,19 @@ internal class InternalNotificationHandle : FenestraComponent
 
     public void HideNotification()
     {
-        try { Notifier.Hide(_handle); }
+        try { Notifier.Hide(_notification); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
     public void ReplaceInternal(ToastContent toast)
     {
         ReleaseEventHandlers();
-        _handle.Dispose();
+        Marshal.ReleaseComObject(_notification);
 
         try
         {
             using var pXmlDoc = new XmlToast(toast);
-            _handle = pXmlDoc.CreateNotificationSafeHandle();
+            _notification = pXmlDoc.CreateNotificationRcw();
 
             CaptureAndApplyProperties(toast);
             Show(toast.ProgressTracker);
@@ -89,15 +92,15 @@ internal class InternalNotificationHandle : FenestraComponent
     {
         try
         {
-            if (group != null) Notifier.HistoryRemoveGrouped(tag, group);
-            else Notifier.HistoryRemove(tag);
+            if (group != null) ToastHistory.RemoveGrouped(tag, group);
+            else ToastHistory.Remove(tag);
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
     public void RemoveGroupInternal(string group)
     {
-        try { Notifier.HistoryRemoveGroup(group); }
+        try { ToastHistory.RemoveGroup(group); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
@@ -121,9 +124,9 @@ internal class InternalNotificationHandle : FenestraComponent
 
         try
         {
-            Notifier.AddActivatedHandler(_handle, _activatedHandler);
-            Notifier.AddDismissedHandler(_handle, _dismissedHandler);
-            Notifier.AddFailedHandler(_handle, _failedHandler);
+            _notification.add_Activated(_activatedHandler, out _);
+            _notification.add_Dismissed(_dismissedHandler, out _);
+            _notification.add_Failed(_failedHandler, out _);
         }
         catch (Exception ex)
         {
@@ -155,19 +158,9 @@ internal class InternalNotificationHandle : FenestraComponent
 
         if (pArgs != IntPtr.Zero)
         {
-            var args = WinRtToastInterop.BorrowComPointer<IToastActivatedEventArgs>(pArgs);
-            if (args != null)
-            {
-                try
-                {
-                    if (args.get_Arguments(out var hString) == 0 && hString != IntPtr.Zero)
-                    {
-                        using var h = new HStringHandle(hString);
-                        arguments = h.ToString();
-                    }
-                }
-                finally { Marshal.ReleaseComObject(args); }
-            }
+            using var args = WinRtToastInterop.BorrowPointer<IToastActivatedEventArgs>(pArgs);
+            if (args != null && args.Value.get_Arguments(out var value) == 0)
+                arguments = value ?? "";
 
             ReadUserInput(pArgs, userInput);
         }
@@ -180,12 +173,8 @@ internal class InternalNotificationHandle : FenestraComponent
         var reason = 0;
         if (pArgs != IntPtr.Zero)
         {
-            var args = WinRtToastInterop.BorrowComPointer<IToastDismissedEventArgs>(pArgs);
-            if (args != null)
-            {
-                try { args.get_Reason(out reason); }
-                finally { Marshal.ReleaseComObject(args); }
-            }
+            using var args = WinRtToastInterop.BorrowPointer<IToastDismissedEventArgs>(pArgs);
+            if (args != null) args.Value.get_Reason(out reason);
         }
 
         OnDismissed?.Invoke((ToastDismissalReason)reason);
@@ -196,12 +185,8 @@ internal class InternalNotificationHandle : FenestraComponent
         var errorCode = 0;
         if (pArgs != IntPtr.Zero)
         {
-            var args = WinRtToastInterop.BorrowComPointer<IToastFailedEventArgs>(pArgs);
-            if (args != null)
-            {
-                try { args.get_ErrorCode(out errorCode); }
-                finally { Marshal.ReleaseComObject(args); }
-            }
+            using var args = WinRtToastInterop.BorrowPointer<IToastFailedEventArgs>(pArgs);
+            if (args != null) args.Value.get_ErrorCode(out errorCode);
         }
 
         OnFailed?.Invoke(errorCode);
@@ -211,30 +196,20 @@ internal class InternalNotificationHandle : FenestraComponent
 
     private static void ReadUserInput(IntPtr pArgs, Dictionary<string, string> result)
     {
-        var args2 = WinRtToastInterop.BorrowComPointer<IToastActivatedEventArgs2>(pArgs);
+        using var args2 = WinRtToastInterop.BorrowPointer<IToastActivatedEventArgs2>(pArgs);
         if (args2 == null) return;
 
-        try
-        {
-            if (args2.get_UserInput(out var pPropSet) != 0 || pPropSet == IntPtr.Zero)
-                return;
+        if (args2.Value.get_UserInput(out var pPropSet) != 0 || pPropSet == IntPtr.Zero) return;
 
-            var iterable = WinRtToastInterop.CastComPointer<IIterableKvpStringObject>(pPropSet);
-            if (iterable == null) return;
+        using var iterable = WinRtToastInterop.CastPointer<IIterableKvpStringObject>(pPropSet);
+        if (iterable == null) return;
 
-            try
-            {
-                if (iterable.First(out var pIter) != 0 || pIter == IntPtr.Zero) return;
+        if (iterable.Value.First(out var pIter) != 0 || pIter == IntPtr.Zero) return;
 
-                var iterator = WinRtToastInterop.CastComPointer<IIteratorKvpStringObject>(pIter);
-                if (iterator == null) return;
+        using var iterator = WinRtToastInterop.CastPointer<IIteratorKvpStringObject>(pIter);
+        if (iterator == null) return;
 
-                try { IterateUserInputPairs(iterator, result); }
-                finally { Marshal.ReleaseComObject(iterator); }
-            }
-            finally { Marshal.ReleaseComObject(iterable); }
-        }
-        finally { Marshal.ReleaseComObject(args2); }
+        IterateUserInputPairs(iterator.Value, result);
     }
 
     private static void IterateUserInputPairs(IIteratorKvpStringObject iterator, Dictionary<string, string> result)
@@ -246,17 +221,13 @@ internal class InternalNotificationHandle : FenestraComponent
 
             if (iterator.get_Current(out var pKvp) == 0 && pKvp != IntPtr.Zero)
             {
-                var kvp = WinRtToastInterop.CastComPointer<IKeyValuePairStringObject>(pKvp);
+                using var kvp = WinRtToastInterop.CastPointer<IKeyValuePairStringObject>(pKvp);
                 if (kvp != null)
                 {
-                    try
-                    {
-                        var key = ReadHString(kvp.get_Key);
-                        var value = ReadObjectValueAsString(kvp);
-                        if (!string.IsNullOrEmpty(key))
-                            result[key] = value;
-                    }
-                    finally { Marshal.ReleaseComObject(kvp); }
+                    kvp.Value.get_Key(out var key);
+                    var value = ReadObjectValueAsString(kvp.Value);
+                    if (!string.IsNullOrEmpty(key))
+                        result[key!] = value;
                 }
             }
 
@@ -270,21 +241,10 @@ internal class InternalNotificationHandle : FenestraComponent
         if (kvp.get_Value(out var pValue) != 0 || pValue == IntPtr.Zero)
             return "";
 
-        var propVal = WinRtToastInterop.CastComPointer<IPropertyValue>(pValue);
+        using var propVal = WinRtToastInterop.CastPointer<IPropertyValue>(pValue);
         if (propVal == null) return "";
 
-        try { return ReadHString(propVal.GetString); }
-        finally { Marshal.ReleaseComObject(propVal); }
-    }
-
-    private delegate int HStringGetter(out IntPtr result);
-
-    private static string ReadHString(HStringGetter getter)
-    {
-        var hr = getter(out var hstringPtr);
-        if (hr != 0 || hstringPtr == IntPtr.Zero) return "";
-        using var hstring = new HStringHandle(hstringPtr);
-        return hstring.ToString();
+        return propVal.Value.GetString(out var value) == 0 ? value ?? "" : "";
     }
 
     // --- Properties ---
@@ -298,23 +258,26 @@ internal class InternalNotificationHandle : FenestraComponent
         ExpiresOnReboot = content.ExpiresOnReboot;
         ExpirationTime = content.ExpirationTime;
 
-        if (!string.IsNullOrEmpty(content.Tag))
-            Notifier.SetTag(_handle, content.Tag!);
+        if (_notification is IToastNotification2 notif2)
+        {
+            if (!string.IsNullOrEmpty(content.Tag))
+                notif2.put_Tag(content.Tag!);
 
-        if (!string.IsNullOrEmpty(content.Group))
-            Notifier.SetGroup(_handle, content.Group!);
+            if (!string.IsNullOrEmpty(content.Group))
+                notif2.put_Group(content.Group!);
 
-        if (content.SuppressPopup)
-            Notifier.SetSuppressPopup(_handle, true);
+            if (content.SuppressPopup)
+                notif2.put_SuppressPopup(1);
+        }
 
-        if (content.Priority != ToastPriority.Default)
-            Notifier.SetPriority(_handle, (int)content.Priority);
+        if (content.Priority != ToastPriority.Default && _notification is IToastNotification4 notif4)
+            notif4.put_Priority((int)content.Priority);
 
-        if (content.ExpiresOnReboot)
-            Notifier.SetExpiresOnReboot(_handle, true);
+        if (content.ExpiresOnReboot && _notification is IToastNotification6 notif6)
+            notif6.put_ExpiresOnReboot(1);
 
         if (content.ExpirationTime.HasValue)
-            Notifier.SetExpirationTime(_handle, content.ExpirationTime.Value);
+            Notifier.SetExpirationTime(_notification, content.ExpirationTime.Value);
     }
 
     protected override void Dispose(bool disposing)
@@ -322,7 +285,7 @@ internal class InternalNotificationHandle : FenestraComponent
         if (disposing)
         {
             ReleaseEventHandlers();
-            _handle.Dispose();
+            Marshal.ReleaseComObject(_notification);
         }
     }
 }

@@ -34,6 +34,12 @@ internal static class ToastInteropConstants
     public static readonly Guid IID_IToastNotificationHistory = new("5CADDC63-01D3-4C97-986F-0533483FEE14");
     public static readonly Guid IID_IToastNotificationHistory2 = new("3BC3D253-2F31-4092-9129-8AD5ABF067DA");
 
+    // ── Scheduled Toast ──
+    public static readonly Guid IID_IScheduledToastNotification = new("79F577F8-0DE7-48CD-9740-9B370490C838");
+    public static readonly Guid IID_IScheduledToastNotification2 = new("A66EA09C-31B4-43B0-B5DD-7A40E85363B1");
+    public static readonly Guid IID_IScheduledToastNotification3 = new("98429E8B-BD32-4A3B-9D15-22AEA49462A1");
+    public static readonly Guid IID_IScheduledToastNotificationFactory = new("E7BED191-0BB9-4571-8C0E-7F0AB7A7BD09");
+
     // ── Event Args ──
     public static readonly Guid IID_IToastActivatedEventArgs = new("E3BF92F3-C197-436F-8265-0625824F8DAC");
     public static readonly Guid IID_IToastActivatedEventArgs2 = new("AB7DA512-CC61-568E-81BE-304AC31038FA");
@@ -89,39 +95,6 @@ internal static class ToastInteropConstants
     // ── Toast Activation Callback ──
     public static readonly Guid IID_INotificationActivationCallback = new("53E31837-6600-4A81-9395-75CFFE746F94");
     public static readonly Guid IID_IClassFactory = new("00000001-0000-0000-C000-000000000046");
-
-    // =========================================================================
-    // Enums
-    // =========================================================================
-
-    public const int ToastDismissalReason_UserCanceled = 0;
-    public const int ToastDismissalReason_ApplicationHidden = 1;
-    public const int ToastDismissalReason_TimedOut = 2;
-
-    public const int ToastNotificationPriority_Default = 0;
-    public const int ToastNotificationPriority_High = 1;
-
-    public const int NotificationMirroring_Allowed = 0;
-    public const int NotificationMirroring_Disabled = 1;
-
-    public const int NotificationSetting_Enabled = 0;
-    public const int NotificationSetting_DisabledForApplication = 1;
-    public const int NotificationSetting_DisabledForUser = 2;
-    public const int NotificationSetting_DisabledByGroupPolicy = 3;
-    public const int NotificationSetting_DisabledByManifest = 4;
-
-    public const int NotificationUpdateResult_Succeeded = 0;
-    public const int NotificationUpdateResult_Failed = 1;
-    public const int NotificationUpdateResult_NotificationNotFound = 2;
-
-    public const int ToastTemplateType_ToastImageAndText01 = 0;
-    public const int ToastTemplateType_ToastImageAndText02 = 1;
-    public const int ToastTemplateType_ToastImageAndText03 = 2;
-    public const int ToastTemplateType_ToastImageAndText04 = 3;
-    public const int ToastTemplateType_ToastText01 = 4;
-    public const int ToastTemplateType_ToastText02 = 5;
-    public const int ToastTemplateType_ToastText03 = 6;
-    public const int ToastTemplateType_ToastText04 = 7;
 
     // =========================================================================
     // HRESULT codes

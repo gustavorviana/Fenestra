@@ -34,7 +34,6 @@ internal class ToastService : IToastService, IDisposable
         registrationManager?.EnsureRegistered();
         WinRtToastInterop.SetCurrentProcessExplicitAppUserModelID(_appId);
         _notifier = new NativeToastNotifier(_appId);
-        if (!_notifier.IsValid) { _notifier.Dispose(); _notifier = null; }
     }
 
     public IToastHandle Show(ToastContent toast)
@@ -54,11 +53,14 @@ internal class ToastService : IToastService, IDisposable
         // Wire COM event callbacks → marshal to UI thread → raise on ToastHandle
         internalHandle.OnActivated = args =>
         {
-            try { _ = _threadContext.InvokeAsync(() =>
+            try
             {
-                _activator?.BringToForeground();
-                handle.RaiseActivated(args);
-            }); }
+                _ = _threadContext.InvokeAsync(() =>
+                {
+                    _activator?.BringToForeground();
+                    handle.RaiseActivated(args);
+                });
+            }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
         };
         internalHandle.OnDismissed = reason =>
@@ -87,8 +89,9 @@ internal class ToastService : IToastService, IDisposable
     public void ClearHistory()
     {
         if (_notifier == null) return;
-        try { _notifier.HistoryClearWithId(_appId); }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
+        using (var history = new NativeToastHistory())
+            try { history.ClearWithId(_appId); }
+            catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
         lock (_active) _active.Clear();
     }
 
