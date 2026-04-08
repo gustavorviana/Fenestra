@@ -29,12 +29,12 @@
 Register the toast service in your WPF application startup:
 
 ```csharp
-using Fenestra.Windows.Wpf;
+using Fenestra.Wpf;
 
-var builder = FenestraBuilder.CreateDefault()
-    .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseWindowsToastNotifications();       // Registers IToastService
-    // .UseWindowsToastActivation();       // Optional: enables background activation when app is closed
+var builder = FenestraApplication.CreateBuilder();
+builder.UseAppInfo("My App", new Version(1, 0, 0));
+builder.Services.AddWindowsToastNotifications();
+// builder.Services.AddWindowsToastActivation();  // Optional: background activation
 
 var app = builder.Build();
 app.Run();

@@ -38,7 +38,7 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         // No explicit app info configuration.
         // AppName => "My Dashboard" (from Product attribute)
@@ -75,7 +75,7 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.UseAppName("My Custom App");
         // AppName => "My Custom App"
@@ -113,7 +113,7 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         // Name + version
         builder.UseAppInfo("My App", new Version(3, 0, 0));
@@ -151,7 +151,7 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.UseAppInfo("My App", "com.company.myapp", new Version(3, 0, 0));
         // AppName => "My App"
@@ -283,11 +283,11 @@ using System.Windows.Controls;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.UseAppInfo("My Dashboard", "com.company.dashboard", new Version(2, 5, 0));
-        builder.UseWindowsSingleInstance();
-        builder.UseWindowsAutoStart();
+        builder.Services.AddWpfSingleInstance();
+        builder.Services.AddWindowsAutoStart();
         builder.RegisterWindows();
     }
 

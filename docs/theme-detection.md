@@ -25,9 +25,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsThemeDetection();
+        builder.Services.AddWindowsThemeDetection();
         builder.RegisterWindows();
     }
 
@@ -189,10 +189,10 @@ using System.Windows.Media;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.UseAppName("ThemeApp");
-        builder.UseWindowsThemeDetection();
+        builder.Services.AddWindowsThemeDetection();
         builder.RegisterWindows();
     }
 

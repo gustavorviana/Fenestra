@@ -165,7 +165,7 @@ using System.Windows.Controls;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.RegisterWindows();
     }

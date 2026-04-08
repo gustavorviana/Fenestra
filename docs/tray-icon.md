@@ -32,9 +32,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsTrayIcon();
+        builder.Services.AddWpfTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -81,9 +81,9 @@ using System.Windows.Controls;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsTrayIcon();
+        builder.Services.AddWpfTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -189,9 +189,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsTrayIcon();
+        builder.Services.AddWpfTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -250,9 +250,9 @@ using System.Windows.Controls;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsTrayIcon();
+        builder.Services.AddWpfTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -323,9 +323,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsMinimizeToTray();
+        builder.Services.AddWpfMinimizeToTray();
         builder.RegisterWindows();
     }
 
@@ -402,9 +402,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsTrayIcon();
+        builder.Services.AddWpfTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -471,9 +471,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsTrayIcon();
+        builder.Services.AddWpfTrayIcon();
         builder.RegisterWindows();
     }
 
@@ -556,7 +556,7 @@ Constructor: `new TrayMenuItem(string text, Action action)` creates an item with
 | `CornerRadius` | `double` | `0` | Corner radius for the context menu popup |
 | `Theme` | `TrayMenuTheme` | `Default` | Theme mode: `Default`, `System`, `Dark`, `Light` |
 
-### FenestraBuilder Methods
+### WpfFenestraBuilder Methods
 
 | Method | Description |
 |---|---|

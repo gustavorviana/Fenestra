@@ -5,10 +5,10 @@
 ## Setup
 
 ```csharp
-var app = FenestraBuilder.CreateDefault()
-    .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseWindowsAutoStart()
-    .Build();
+var builder = FenestraApplication.CreateBuilder();
+builder.UseAppInfo("My App", new Version(1, 0, 0));
+builder.Services.AddWindowsAutoStart();
+var app = builder.Build();
 ```
 
 ## Enable Auto-Start

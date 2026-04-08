@@ -1,5 +1,6 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
+using Fenestra.Windows.Models;
 using Fenestra.Windows.Native.Toast;
 
 namespace Fenestra.Windows.Services;
@@ -25,7 +26,7 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
     /// <inheritdoc />
     public bool IsRegistered => _registered;
 
-    public ToastActivationRegistrar(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null)
+    public ToastActivationRegistrar(WindowsAppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null)
     {
         _threadContext = threadContext;
         _activator = activator;

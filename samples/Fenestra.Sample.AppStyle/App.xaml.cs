@@ -19,7 +19,7 @@ public partial class App : FenestraApp
     private readonly NotifyBadgeOverlay _badge = new();
     private AnimatedTryIcon _animatedIcon = null!;
 
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.Services.AddWpfMinimizeToTray();
         builder.Services.AddWpfSingleInstance();

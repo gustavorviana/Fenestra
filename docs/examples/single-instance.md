@@ -5,10 +5,10 @@
 ## Setup
 
 ```csharp
-var app = FenestraBuilder.CreateDefault()
-    .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseWindowsSingleInstance()
-    .Build();
+var builder = FenestraApplication.CreateBuilder();
+builder.UseAppInfo("My App", new Version(1, 0, 0));
+builder.Services.AddWpfSingleInstance();
+var app = builder.Build();
 ```
 
 ## Receive Forwarded Arguments

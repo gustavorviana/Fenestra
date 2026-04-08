@@ -23,9 +23,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsSingleInstance();
+        builder.Services.AddWpfSingleInstance();
         builder.RegisterWindows();
     }
 
@@ -60,9 +60,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsSingleInstance();
+        builder.Services.AddWpfSingleInstance();
         builder.RegisterWindows();
         builder.Services.AddSingleton<ISingleInstanceApp, ArgumentHandler>();
     }
@@ -124,10 +124,10 @@ using System.Windows.Controls;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.UseAppName("FileViewer");
-        builder.UseWindowsSingleInstance();
+        builder.Services.AddWpfSingleInstance();
         builder.RegisterWindows();
         builder.Services.AddSingleton<ISingleInstanceApp, FileOpenHandler>();
     }

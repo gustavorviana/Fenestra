@@ -16,7 +16,7 @@ namespace Fenestra.Wpf;
 /// <code>
 /// public partial class App : FenestraApp
 /// {
-///     protected override void Configure(FenestraBuilder builder)
+///     protected override void Configure(WpfFenestraBuilder builder)
 ///     {
 ///         builder.Services.AddSingleton&lt;IMyService, MyService&gt;();
 ///         builder.RegisterWindows();
@@ -79,7 +79,7 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
     /// <summary>
     /// Configure services, logging, and additional hosts.
     /// </summary>
-    protected abstract void Configure(FenestraBuilder builder);
+    protected abstract void Configure(WpfFenestraBuilder builder);
 
     /// <summary>
     /// Create the main shell window from the DI container.
@@ -101,12 +101,12 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
     {
         base.OnStartup(e);
 
-        var builder = new FenestraBuilder();
+        var builder = new WpfFenestraBuilder();
         builder.SetArgs(e.Args);
         Configure(builder);
 
         builder.SetWpfAppInstance(this);
-        _host = builder.BuildHost(shellType: null);
+        _host = builder.BuildHostInternal();
         AppInfo = _host.Services.GetRequiredService<AppInfo>();
 
         var singleInstance = Services.GetService<Services.SingleInstanceGuard>();

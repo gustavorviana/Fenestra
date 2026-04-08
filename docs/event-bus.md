@@ -231,7 +231,7 @@ public record ItemCountChangedEvent(int Count);
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.RegisterWindows();
         builder.Services.AddSingleton<InventoryService>();

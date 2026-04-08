@@ -112,13 +112,13 @@ using System.Windows.Controls;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.RegisterWindows();
 
         if (Platform.IsWindows10OrLater)
         {
-            builder.UseWindowsThemeDetection();
+            builder.Services.AddWindowsThemeDetection();
         }
     }
 

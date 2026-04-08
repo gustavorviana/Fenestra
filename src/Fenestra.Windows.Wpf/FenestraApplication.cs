@@ -79,17 +79,17 @@ public class FenestraApplication : IHost, IWpfApplication
     /// <summary>
     /// Creates a builder.
     /// </summary>
-    public static FenestraBuilder CreateBuilder()
+    public static WpfFenestraBuilder CreateBuilder()
     {
-        return new FenestraBuilder();
+        return new WpfFenestraBuilder();
     }
 
     /// <summary>
     /// Creates a builder with startup args.
     /// </summary>
-    public static FenestraBuilder CreateBuilder(string[] args)
+    public static WpfFenestraBuilder CreateBuilder(string[] args)
     {
-        var builder = new FenestraBuilder();
+        var builder = new WpfFenestraBuilder();
         builder.SetArgs(args);
         return builder;
     }
@@ -98,21 +98,21 @@ public class FenestraApplication : IHost, IWpfApplication
     /// Creates a builder with a custom Application type and shell window.
     /// Consumer's .csproj must set EnableDefaultApplicationDefinition to false.
     /// </summary>
-    public static FenestraBuilder CreateBuilder<TApp, TShell>()
+    public static WpfFenestraBuilder CreateBuilder<TApp, TShell>()
         where TApp : Application, new()
         where TShell : Window
     {
-        return new FenestraBuilder { AppType = typeof(TApp), ShellType = typeof(TShell) };
+        return new WpfFenestraBuilder { AppType = typeof(TApp), ShellType = typeof(TShell) };
     }
 
     /// <summary>
     /// Creates a builder with a custom Application type, shell window, and startup args.
     /// </summary>
-    public static FenestraBuilder CreateBuilder<TApp, TShell>(string[] args)
+    public static WpfFenestraBuilder CreateBuilder<TApp, TShell>(string[] args)
         where TApp : Application, new()
         where TShell : Window
     {
-        var builder = new FenestraBuilder { AppType = typeof(TApp), ShellType = typeof(TShell) };
+        var builder = new WpfFenestraBuilder { AppType = typeof(TApp), ShellType = typeof(TShell) };
         builder.SetArgs(args);
         return builder;
     }
@@ -120,19 +120,19 @@ public class FenestraApplication : IHost, IWpfApplication
     /// <summary>
     /// Creates a builder with a shell window and default Application.
     /// </summary>
-    public static FenestraBuilder CreateBuilder<TShell>()
+    public static WpfFenestraBuilder CreateBuilder<TShell>()
         where TShell : Window
     {
-        return new FenestraBuilder { ShellType = typeof(TShell) };
+        return new WpfFenestraBuilder { ShellType = typeof(TShell) };
     }
 
     /// <summary>
     /// Creates a builder with a shell window and startup args.
     /// </summary>
-    public static FenestraBuilder CreateBuilder<TShell>(string[] args)
+    public static WpfFenestraBuilder CreateBuilder<TShell>(string[] args)
         where TShell : Window
     {
-        var builder = new FenestraBuilder { ShellType = typeof(TShell) };
+        var builder = new WpfFenestraBuilder { ShellType = typeof(TShell) };
         builder.SetArgs(args);
         return builder;
     }

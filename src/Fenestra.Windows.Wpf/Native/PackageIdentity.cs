@@ -57,7 +57,7 @@ internal static class PackageIdentity
         }
 
         var aumid = $"{familyName}!{applicationId}";
-        return new AppInfo(displayName, aumid, version, familyName);
+        return new Windows.Models.WindowsAppInfo(displayName, aumid, version, familyName);
     }
 
     private static void TryParseManifest(string manifestPath, ref string displayName, ref string applicationId)

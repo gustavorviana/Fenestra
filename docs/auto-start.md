@@ -25,9 +25,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsAutoStart();
+        builder.Services.AddWindowsAutoStart();
         builder.RegisterWindows();
     }
 
@@ -186,10 +186,10 @@ using System.Windows.Controls;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.UseAppName("MyDashboard");
-        builder.UseWindowsAutoStart();
+        builder.Services.AddWindowsAutoStart();
         builder.RegisterWindows();
     }
 

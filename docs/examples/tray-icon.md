@@ -5,10 +5,10 @@
 ## Setup
 
 ```csharp
-var app = FenestraBuilder.CreateDefault()
-    .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseWindowsTrayIcon()
-    .Build();
+var builder = FenestraApplication.CreateBuilder();
+builder.UseAppInfo("My App", new Version(1, 0, 0));
+builder.Services.AddWpfTrayIcon();
+var app = builder.Build();
 ```
 
 ## Basic Tray Icon
@@ -96,11 +96,11 @@ _tray.SetBadge(0);      // Clears the badge
 Enable minimize-to-tray behavior for windows:
 
 ```csharp
-var app = FenestraBuilder.CreateDefault()
-    .UseAppInfo("My App", new Version(1, 0, 0))
-    .UseWindowsTrayIcon()
-    .UseWindowsMinimizeToTray()
-    .Build();
+var builder = FenestraApplication.CreateBuilder();
+builder.UseAppInfo("My App", new Version(1, 0, 0));
+builder.Services.AddWpfTrayIcon();
+builder.Services.AddWpfMinimizeToTray();
+var app = builder.Build();
 ```
 
 Mark your window to use this behavior:

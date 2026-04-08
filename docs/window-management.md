@@ -33,7 +33,7 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.RegisterWindows();
     }
@@ -356,7 +356,7 @@ public class JsonWindowPositionStorage : IWindowPositionStorage
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.UseWindowsPositionStorage<JsonWindowPositionStorage>();
         builder.RegisterWindows();
@@ -391,7 +391,7 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
         builder.RegisterWindows();
     }

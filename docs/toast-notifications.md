@@ -24,9 +24,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -72,9 +72,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -123,9 +123,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -198,9 +198,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -263,9 +263,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -311,9 +311,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -382,9 +382,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
@@ -461,9 +461,9 @@ using System.Windows;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsToastNotifications();
+        builder.Services.AddWindowsToastNotifications();
         builder.RegisterWindows();
     }
 
