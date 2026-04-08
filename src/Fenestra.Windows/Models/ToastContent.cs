@@ -24,6 +24,8 @@ public class ToastContent
     public ToastPriority Priority { get; set; }
     public bool ExpiresOnReboot { get; set; }
     public DateTimeOffset? ExpirationTime { get; set; }
+    public NotificationMirroring NotificationMirroring { get; set; }
+    public string? RemoteId { get; set; }
     public List<ToastGroup> Groups { get; } = new();
     public ToastProgressTracker? ProgressTracker { get; set; }
 }

@@ -88,6 +88,17 @@ public class ToastBuilder
     /// </summary>
     public ToastBuilder ExpirationTime(DateTimeOffset expiration) { _content.ExpirationTime = expiration; return this; }
 
+    /// <summary>
+    /// Controls whether this toast is mirrored (duplicated) to other devices signed in with the same account.
+    /// Default is <see cref="Models.NotificationMirroring.Allowed"/>.
+    /// </summary>
+    public ToastBuilder NotificationMirroring(NotificationMirroring mirroring) { _content.NotificationMirroring = mirroring; return this; }
+
+    /// <summary>
+    /// Sets a remote identifier for cross-device notification matching.
+    /// </summary>
+    public ToastBuilder RemoteId(string remoteId) { _content.RemoteId = remoteId; return this; }
+
     // --- Images ---
 
     /// <summary>

@@ -45,14 +45,26 @@ public interface IToastHandle : IDisposable
     DateTimeOffset? ExpirationTime { get; }
 
     /// <summary>
-    /// Updates the data bindings of this toast (for progress bars).
+    /// Gets the notification mirroring setting (cross-device sync).
     /// </summary>
-    void Update(Dictionary<string, string> data);
+    NotificationMirroring NotificationMirroring { get; }
+
+    /// <summary>
+    /// Gets the remote identifier for cross-device notification matching.
+    /// </summary>
+    string? RemoteId { get; }
+
+    /// <summary>
+    /// Updates the data bindings of this toast (for progress bars).
+    /// Returns the result of the update operation.
+    /// </summary>
+    NotificationUpdateResult Update(Dictionary<string, string> data);
 
     /// <summary>
     /// Replaces the toast content by rebuilding it via the builder (keeps the same tag/group).
+    /// Returns the result of the update operation.
     /// </summary>
-    void Update(Action<ToastBuilder> configure);
+    NotificationUpdateResult Update(Action<ToastBuilder> configure);
 
     /// <summary>
     /// Dismisses this toast immediately from the screen and removes it from Action Center.

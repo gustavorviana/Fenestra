@@ -7,18 +7,19 @@ namespace Fenestra.Windows.Native.Toast;
 
 internal class XmlToast : FenestraComponent
 {
-    private readonly object _xmlDoc;
+    private readonly ComRef<IXmlDocumentIO> _xmlDoc;
+    internal IXmlDocumentIO XmlDocument => _xmlDoc.Value;
     public ToastContent Content { get; }
 
     public XmlToast(ToastContent toast)
     {
-        _xmlDoc = WinRtToastInterop.ActivateInstance<IXmlDocumentIO>("Windows.Data.Xml.Dom.XmlDocument")?.Value
+        _xmlDoc = WinRtToastInterop.ActivateInstance<IXmlDocumentIO>("Windows.Data.Xml.Dom.XmlDocument")
             ?? throw new InvalidOperationException("RoActivateInstance failed for XmlDocument.");
 
         Content = toast;
 
         var xml = ToastXmlBuilder.Build(toast, toast.ProgressTracker != null);
-        var hr = ((IXmlDocumentIO)_xmlDoc).LoadXml(xml);
+        var hr = _xmlDoc.Value.LoadXml(xml);
         if (hr < 0) throw new COMException($"LoadXml failed. HRESULT=0x{hr:X8}", hr);
     }
 
@@ -33,7 +34,7 @@ internal class XmlToast : FenestraComponent
             "Windows.UI.Notifications.ToastNotification", ToastInteropConstants.IID_IToastNotificationFactory)
             ?? throw new InvalidOperationException("Failed to get ToastNotification factory.");
 
-        var hr = factory.Value.CreateToastNotification(_xmlDoc, out var pNotif);
+        var hr = factory.Value.CreateToastNotification(_xmlDoc.Value, out var pNotif);
         if (hr < 0) throw new COMException($"CreateToastNotification failed. HRESULT=0x{hr:X8}", hr);
         if (pNotif == IntPtr.Zero) throw new InvalidOperationException("CreateToastNotification returned null.");
 
@@ -44,6 +45,6 @@ internal class XmlToast : FenestraComponent
     protected override void Dispose(bool disposing)
     {
         if (disposing)
-            Marshal.ReleaseComObject(_xmlDoc);
+            _xmlDoc.Dispose();
     }
 }

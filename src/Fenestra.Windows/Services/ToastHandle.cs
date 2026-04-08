@@ -17,6 +17,8 @@ internal class ToastHandle : IToastHandle
     public ToastPriority Priority => _internalHandle.Priority;
     public bool ExpiresOnReboot => _internalHandle.ExpiresOnReboot;
     public DateTimeOffset? ExpirationTime => _internalHandle.ExpirationTime;
+    public NotificationMirroring NotificationMirroring => _internalHandle.NotificationMirroring;
+    public string? RemoteId => _internalHandle.RemoteId;
 
     public event EventHandler<ToastActivatedArgs>? Activated;
     public event EventHandler<ToastDismissalReason>? Dismissed;
@@ -28,15 +30,15 @@ internal class ToastHandle : IToastHandle
         _internalHandle = internalHandle;
     }
 
-    public void Update(Dictionary<string, string> data)
+    public NotificationUpdateResult Update(Dictionary<string, string> data)
     {
-        if (State != ToastHandleState.Active) return;
-        _internalHandle.Update(data);
+        if (State != ToastHandleState.Active) return NotificationUpdateResult.Failed;
+        return _internalHandle.Update(data);
     }
 
-    public void Update(Action<ToastBuilder> configure)
+    public NotificationUpdateResult Update(Action<ToastBuilder> configure)
     {
-        if (State != ToastHandleState.Active) return;
+        if (State != ToastHandleState.Active) return NotificationUpdateResult.Failed;
 
         var builder = new ToastBuilder();
         configure(builder);
@@ -45,6 +47,7 @@ internal class ToastHandle : IToastHandle
         content.Group = Group;
 
         _internalHandle.ReplaceInternal(content);
+        return NotificationUpdateResult.Succeeded;
     }
 
     public void Hide()

@@ -8,8 +8,7 @@ namespace Fenestra.Windows.Services;
 
 internal class InternalNotificationHandle : FenestraComponent
 {
-    internal NativeToastHistory ToastHistory { get; }
-    private IToastNotification _notification;
+    private ComRef<IToastNotification> _notification;
     private IntPtr _activatedHandler;
     private IntPtr _dismissedHandler;
     private IntPtr _failedHandler;
@@ -21,6 +20,8 @@ internal class InternalNotificationHandle : FenestraComponent
     public ToastPriority Priority { get; private set; }
     public bool ExpiresOnReboot { get; private set; }
     public DateTimeOffset? ExpirationTime { get; private set; }
+    public NotificationMirroring NotificationMirroring { get; private set; }
+    public string? RemoteId { get; private set; }
 
     public Action<ToastActivatedArgs>? OnActivated { get; set; }
     public Action<ToastDismissalReason>? OnDismissed { get; set; }
@@ -29,21 +30,19 @@ internal class InternalNotificationHandle : FenestraComponent
     public InternalNotificationHandle(NativeToastNotifier notifier, ToastContent content, IToastNotification notification)
     {
         Notifier = notifier;
-        _notification = notification;
-        ToastHistory = new NativeToastHistory();
-
+        _notification = new ComRef<IToastNotification>(notification);
         CaptureAndApplyProperties(content);
     }
 
     public void Show(ToastProgressTracker? tracker)
     {
-        Notifier.Show(_notification);
+        Notifier.Show(_notification.Value);
         RegisterEvents();
 
         if (tracker == null)
             return;
 
-        tracker.Bind(Update);
+        tracker.Bind(data => Update(data));
 
         var initial = new Dictionary<string, string>
         {
@@ -59,28 +58,32 @@ internal class InternalNotificationHandle : FenestraComponent
         Update(initial);
     }
 
-    public void Update(Dictionary<string, string> data)
+    public NotificationUpdateResult Update(Dictionary<string, string> data)
     {
-        if (Notifier == null || Tag == null) return;
-        try { Notifier.Update(Tag!, Group, data, 0); }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
+        if (Notifier == null || Tag == null) return NotificationUpdateResult.Failed;
+        try { return Notifier.Update(Tag!, Group, data, 0); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}");
+            return NotificationUpdateResult.Failed;
+        }
     }
 
     public void HideNotification()
     {
-        try { Notifier.Hide(_notification); }
+        try { Notifier.Hide(_notification.Value); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
     public void ReplaceInternal(ToastContent toast)
     {
         ReleaseEventHandlers();
-        Marshal.ReleaseComObject(_notification);
+        _notification.Dispose();
 
         try
         {
             using var pXmlDoc = new XmlToast(toast);
-            _notification = pXmlDoc.CreateNotificationRcw();
+            _notification = new ComRef<IToastNotification>(pXmlDoc.CreateNotificationRcw());
 
             CaptureAndApplyProperties(toast);
             Show(toast.ProgressTracker);
@@ -92,15 +95,15 @@ internal class InternalNotificationHandle : FenestraComponent
     {
         try
         {
-            if (group != null) ToastHistory.RemoveGrouped(tag, group);
-            else ToastHistory.Remove(tag);
+            if (group != null) Notifier.History?.RemoveGroupedTag(tag, group);
+            else Notifier.History?.Remove(tag);
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
     public void RemoveGroupInternal(string group)
     {
-        try { ToastHistory.RemoveGroup(group); }
+        try { Notifier.History?.RemoveGroup(group); }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"[Fenestra.Toast] {ex.Message}"); }
     }
 
@@ -124,9 +127,9 @@ internal class InternalNotificationHandle : FenestraComponent
 
         try
         {
-            _notification.add_Activated(_activatedHandler, out _);
-            _notification.add_Dismissed(_dismissedHandler, out _);
-            _notification.add_Failed(_failedHandler, out _);
+            _notification.Value.add_Activated(_activatedHandler, out _);
+            _notification.Value.add_Dismissed(_dismissedHandler, out _);
+            _notification.Value.add_Failed(_failedHandler, out _);
         }
         catch (Exception ex)
         {
@@ -257,8 +260,10 @@ internal class InternalNotificationHandle : FenestraComponent
         Priority = content.Priority;
         ExpiresOnReboot = content.ExpiresOnReboot;
         ExpirationTime = content.ExpirationTime;
+        NotificationMirroring = content.NotificationMirroring;
+        RemoteId = content.RemoteId;
 
-        if (_notification is IToastNotification2 notif2)
+        if (_notification.Value is IToastNotification2 notif2)
         {
             if (!string.IsNullOrEmpty(content.Tag))
                 notif2.put_Tag(content.Tag!);
@@ -270,14 +275,23 @@ internal class InternalNotificationHandle : FenestraComponent
                 notif2.put_SuppressPopup(1);
         }
 
-        if (content.Priority != ToastPriority.Default && _notification is IToastNotification4 notif4)
+        if (content.Priority != ToastPriority.Default && _notification.Value is IToastNotification4 notif4)
             notif4.put_Priority((int)content.Priority);
 
-        if (content.ExpiresOnReboot && _notification is IToastNotification6 notif6)
+        if (content.ExpiresOnReboot && _notification.Value is IToastNotification6 notif6)
             notif6.put_ExpiresOnReboot(1);
 
         if (content.ExpirationTime.HasValue)
-            Notifier.SetExpirationTime(_notification, content.ExpirationTime.Value);
+            Notifier.SetExpirationTime(_notification.Value, content.ExpirationTime.Value);
+
+        if (_notification.Value is IToastNotification3 notif3)
+        {
+            if (content.NotificationMirroring != NotificationMirroring.Allowed)
+                notif3.put_NotificationMirroring((int)content.NotificationMirroring);
+
+            if (!string.IsNullOrEmpty(content.RemoteId))
+                notif3.put_RemoteId(content.RemoteId!);
+        }
     }
 
     protected override void Dispose(bool disposing)
@@ -285,7 +299,7 @@ internal class InternalNotificationHandle : FenestraComponent
         if (disposing)
         {
             ReleaseEventHandlers();
-            Marshal.ReleaseComObject(_notification);
+            _notification.Dispose();
         }
     }
 }

@@ -11,8 +11,12 @@ namespace Fenestra.Windows.Native.Toast;
 /// </summary>
 internal sealed class NativeToastNotifier : IDisposable
 {
-    private readonly IToastNotifier _notifier;
+    private readonly ComRef<IToastNotifier> _notifier;
+    private readonly ComRef<IToastNotificationHistory>? _history;
     private bool _disposed;
+
+    /// <summary>Direct access to the toast notification history interface. Null if unsupported.</summary>
+    public IToastNotificationHistory? History => _history?.Value;
 
     public NativeToastNotifier(string appId)
     {
@@ -28,21 +32,27 @@ internal sealed class NativeToastNotifier : IDisposable
                 throw new InvalidOperationException($"CreateToastNotifier failed for appId '{appId}'.");
         }
 
-        _notifier = WinRtToastInterop.CastPointer<IToastNotifier>(pNotifier)?.Value
+        _notifier = WinRtToastInterop.CastPointer<IToastNotifier>(pNotifier)
             ?? throw new InvalidOperationException("Failed to wrap IToastNotifier.");
+
+        // Obtain toast history (optional — may not be supported on all OS versions)
+        using var manager2 = WinRtToastInterop.GetActivationFactory<IToastNotificationManagerStatics2>(
+            "Windows.UI.Notifications.ToastNotificationManager", IID_IToastNotificationManagerStatics2);
+        if (manager2 != null && manager2.Value.get_History(out var pHistory) == 0 && pHistory != IntPtr.Zero)
+            _history = WinRtToastInterop.CastPointer<IToastNotificationHistory>(pHistory);
     }
 
     // --- Show / Hide ---
 
     public void Show(IToastNotification notification)
     {
-        var hr = _notifier.Show(notification);
+        var hr = _notifier.Value.Show(notification);
         if (hr < 0) throw new COMException($"IToastNotifier.Show failed. HRESULT=0x{hr:X8}", hr);
     }
 
     public void Hide(IToastNotification notification)
     {
-        var hr = _notifier.Hide(notification);
+        var hr = _notifier.Value.Hide(notification);
         if (hr < 0) throw new COMException($"IToastNotifier.Hide failed. HRESULT=0x{hr:X8}", hr);
     }
 
@@ -50,7 +60,7 @@ internal sealed class NativeToastNotifier : IDisposable
 
     public NotificationSetting GetSetting()
     {
-        _notifier.get_Setting(out var setting);
+        _notifier.Value.get_Setting(out var setting);
         return (NotificationSetting)setting;
     }
 
@@ -173,13 +183,13 @@ internal sealed class NativeToastNotifier : IDisposable
 
     public void AddToSchedule(IScheduledToastNotification scheduled)
     {
-        var hr = _notifier.AddToSchedule(scheduled);
+        var hr = _notifier.Value.AddToSchedule(scheduled);
         if (hr < 0) throw new COMException($"AddToSchedule failed. HRESULT=0x{hr:X8}", hr);
     }
 
     public void RemoveFromSchedule(IScheduledToastNotification scheduled)
     {
-        var hr = _notifier.RemoveFromSchedule(scheduled);
+        var hr = _notifier.Value.RemoveFromSchedule(scheduled);
         if (hr < 0) throw new COMException($"RemoveFromSchedule failed. HRESULT=0x{hr:X8}", hr);
     }
 
@@ -187,7 +197,7 @@ internal sealed class NativeToastNotifier : IDisposable
 
     public NotificationUpdateResult Update(string tag, string? group, Dictionary<string, string> data, uint sequenceNumber)
     {
-        if (_notifier is not IToastNotifier2 notifier2)
+        if (_notifier.Value is not IToastNotifier2 notifier2)
             return NotificationUpdateResult.Failed;
 
         using var notifData = CreateNotificationData(data, sequenceNumber);
@@ -211,14 +221,11 @@ internal sealed class NativeToastNotifier : IDisposable
 
         notifData.Value.put_SequenceNumber(sequenceNumber);
 
-        if (notifData.Value.get_Values(out var map) == 0 && map != null)
+        if (notifData.Value.get_Values(out var rawMap) == 0 && rawMap != null)
         {
-            try
-            {
-                foreach (var kv in data)
-                    map.Insert(kv.Key, kv.Value, out _);
-            }
-            finally { Marshal.ReleaseComObject(map); }
+            using var map = new ComRef<IMapStringString>(rawMap);
+            foreach (var kv in data)
+                map.Value.Insert(kv.Key, kv.Value, out _);
         }
 
         return notifData;
@@ -240,6 +247,7 @@ internal sealed class NativeToastNotifier : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        Marshal.ReleaseComObject(_notifier);
+        _history?.Dispose();
+        _notifier.Dispose();
     }
 }
