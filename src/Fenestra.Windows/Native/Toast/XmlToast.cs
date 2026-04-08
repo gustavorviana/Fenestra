@@ -7,13 +7,15 @@ namespace Fenestra.Windows.Native.Toast;
 
 internal class XmlToast : FenestraComponent
 {
+    private readonly IWinRtInterop _interop;
     private readonly ComRef<IXmlDocumentIO> _xmlDoc;
     internal IXmlDocumentIO XmlDocument => _xmlDoc.Value;
     public ToastContent Content { get; }
 
-    public XmlToast(ToastContent toast)
+    public XmlToast(ToastContent toast, IWinRtInterop interop)
     {
-        _xmlDoc = WinRtToastInterop.ActivateInstance<IXmlDocumentIO>("Windows.Data.Xml.Dom.XmlDocument")
+        _interop = interop;
+        _xmlDoc = interop.ActivateInstance<IXmlDocumentIO>("Windows.Data.Xml.Dom.XmlDocument")
             ?? throw new InvalidOperationException("RoActivateInstance failed for XmlDocument.");
 
         Content = toast;
@@ -25,12 +27,12 @@ internal class XmlToast : FenestraComponent
 
     public InternalNotificationHandle CreateNotification(NativeToastNotifier notifier)
     {
-        return new InternalNotificationHandle(notifier, Content, CreateNotificationRcw());
+        return new InternalNotificationHandle(notifier, Content, CreateNotificationRcw(), _interop);
     }
 
     public IToastNotification CreateNotificationRcw()
     {
-        using var factory = WinRtToastInterop.GetActivationFactory<IToastNotificationFactory>(
+        using var factory = _interop.GetActivationFactory<IToastNotificationFactory>(
             "Windows.UI.Notifications.ToastNotification", ToastInteropConstants.IID_IToastNotificationFactory)
             ?? throw new InvalidOperationException("Failed to get ToastNotification factory.");
 
@@ -38,7 +40,7 @@ internal class XmlToast : FenestraComponent
         if (hr < 0) throw new COMException($"CreateToastNotification failed. HRESULT=0x{hr:X8}", hr);
         if (pNotif == IntPtr.Zero) throw new InvalidOperationException("CreateToastNotification returned null.");
 
-        return WinRtToastInterop.CastPointer<IToastNotification>(pNotif)?.Value
+        return _interop.CastPointer<IToastNotification>(pNotif)?.Value
             ?? throw new InvalidOperationException("Failed to wrap IToastNotification.");
     }
 

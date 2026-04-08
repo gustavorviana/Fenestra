@@ -3,13 +3,12 @@ using System.Runtime.InteropServices;
 namespace Fenestra.Windows.Native;
 
 /// <summary>
-/// WinRT activation helpers and COM pointer conversion utilities.
-/// All methods returning <see cref="ComRef{T}"/> transfer ownership — caller must <c>using</c> or <c>Dispose</c>.
+/// WinRT activation and COM pointer conversion via P/Invoke.
+/// Implements <see cref="IWinRtInterop"/> for dependency injection.
 /// </summary>
-internal static class WinRtToastInterop
+internal sealed class WinRtInterop : IWinRtInterop
 {
-    /// <summary>Activates a WinRT class and returns an RCW wrapped in <see cref="ComRef{T}"/>.</summary>
-    public static ComRef<T>? ActivateInstance<T>(string className) where T : class
+    public ComRef<T>? ActivateInstance<T>(string className) where T : class
     {
         using var hClass = HStringHandle.Create(className);
         var hr = RoActivateInstance(hClass, out var instance);
@@ -19,8 +18,7 @@ internal static class WinRtToastInterop
         finally { Marshal.Release(instance); }
     }
 
-    /// <summary>Gets an activation factory RCW wrapped in <see cref="ComRef{T}"/>.</summary>
-    public static ComRef<T>? GetActivationFactory<T>(string className, Guid iid) where T : class
+    public ComRef<T>? GetActivationFactory<T>(string className, Guid iid) where T : class
     {
         using var hClass = HStringHandle.Create(className);
         var hr = RoGetActivationFactory(hClass, ref iid, out var factory);
@@ -30,11 +28,7 @@ internal static class WinRtToastInterop
         finally { Marshal.Release(factory); }
     }
 
-    /// <summary>
-    /// Takes ownership of a COM out-parameter pointer, wraps in RCW + <see cref="ComRef{T}"/>,
-    /// and releases the original pointer. Caller must <c>Dispose</c> the returned ref.
-    /// </summary>
-    public static ComRef<T>? CastPointer<T>(IntPtr pUnk) where T : class
+    public ComRef<T>? CastPointer<T>(IntPtr pUnk) where T : class
     {
         if (pUnk == IntPtr.Zero) return null;
         object? rcw = null;
@@ -51,18 +45,15 @@ internal static class WinRtToastInterop
         finally { Marshal.Release(pUnk); }
     }
 
-    /// <summary>
-    /// Wraps a borrowed COM pointer (one you don't own) in an RCW + <see cref="ComRef{T}"/>.
-    /// AddRefs first so <see cref="CastPointer{T}"/>'s Release is balanced.
-    /// </summary>
-    public static ComRef<T>? BorrowPointer<T>(IntPtr pUnk) where T : class
+    public ComRef<T>? BorrowPointer<T>(IntPtr pUnk) where T : class
     {
         if (pUnk == IntPtr.Zero) return null;
         Marshal.AddRef(pUnk);
         return CastPointer<T>(pUnk);
     }
 
-    // --- P/Invoke ---
+    public void SetCurrentProcessExplicitAppUserModelID(string appID)
+        => SetCurrentProcessExplicitAppUserModelIDNative(appID);
 
     [DllImport("combase.dll")]
     private static extern int RoActivateInstance(HStringHandle activatableClassId, out IntPtr instance);
@@ -70,6 +61,6 @@ internal static class WinRtToastInterop
     [DllImport("combase.dll")]
     private static extern int RoGetActivationFactory(HStringHandle activatableClassId, ref Guid iid, out IntPtr factory);
 
-    [DllImport("shell32.dll", SetLastError = true)]
-    internal static extern void SetCurrentProcessExplicitAppUserModelID([MarshalAs(UnmanagedType.LPWStr)] string appID);
+    [DllImport("shell32.dll", SetLastError = true, EntryPoint = "SetCurrentProcessExplicitAppUserModelID")]
+    private static extern void SetCurrentProcessExplicitAppUserModelIDNative([MarshalAs(UnmanagedType.LPWStr)] string appID);
 }

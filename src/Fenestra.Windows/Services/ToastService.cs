@@ -12,6 +12,7 @@ namespace Fenestra.Windows.Services;
 internal class ToastService : IToastService, IDisposable
 {
     private readonly string _appId;
+    private readonly IWinRtInterop _interop;
     private readonly IThreadContext _threadContext;
     private readonly IApplicationActivator? _activator;
     private readonly List<ToastHandle> _active = new();
@@ -29,17 +30,18 @@ internal class ToastService : IToastService, IDisposable
         get { lock (_scheduled) return _scheduled.ToArray(); }
     }
 
-    public ToastService(AppInfo appInfo, IThreadContext threadContext, IApplicationActivator? activator = null, IWindowsNotificationRegistrationManager? registrationManager = null)
+    public ToastService(AppInfo appInfo, IThreadContext threadContext, IWinRtInterop? interop = null, IApplicationActivator? activator = null, IWindowsNotificationRegistrationManager? registrationManager = null)
     {
         Platform.EnsureWindows10();
 
         _appId = appInfo.AppId;
+        _interop = interop ?? new WinRtInterop();
         _threadContext = threadContext;
         _activator = activator;
 
         registrationManager?.EnsureRegistered();
-        WinRtToastInterop.SetCurrentProcessExplicitAppUserModelID(_appId);
-        _notifier = new NativeToastNotifier(_appId);
+        _interop.SetCurrentProcessExplicitAppUserModelID(_appId);
+        _notifier = new NativeToastNotifier(_appId, _interop);
     }
 
     public IToastHandle Show(ToastContent toast)
@@ -50,7 +52,7 @@ internal class ToastService : IToastService, IDisposable
         if (_notifier == null)
             return null!;
 
-        using var pXmlDoc = new XmlToast(toast);
+        using var pXmlDoc = new XmlToast(toast, _interop);
         var internalHandle = pXmlDoc.CreateNotification(_notifier!);
 
         var handle = new ToastHandle(this, internalHandle);
@@ -137,7 +139,7 @@ internal class ToastService : IToastService, IDisposable
         if (_notifier == null)
             throw new InvalidOperationException("ToastService is not initialized.");
 
-        using var xmlToast = new XmlToast(toast);
+        using var xmlToast = new XmlToast(toast, _interop);
         var scheduled = _notifier.CreateScheduledToast(xmlToast.XmlDocument, deliveryTime);
 
         // Apply tag/group if supported

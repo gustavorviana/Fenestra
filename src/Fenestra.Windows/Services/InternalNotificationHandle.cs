@@ -8,6 +8,7 @@ namespace Fenestra.Windows.Services;
 
 internal class InternalNotificationHandle : FenestraComponent
 {
+    private readonly IWinRtInterop _interop;
     private ComRef<IToastNotification> _notification;
     private IntPtr _activatedHandler;
     private IntPtr _dismissedHandler;
@@ -27,8 +28,9 @@ internal class InternalNotificationHandle : FenestraComponent
     public Action<ToastDismissalReason>? OnDismissed { get; set; }
     public Action<int>? OnFailed { get; set; }
 
-    public InternalNotificationHandle(NativeToastNotifier notifier, ToastContent content, IToastNotification notification)
+    public InternalNotificationHandle(NativeToastNotifier notifier, ToastContent content, IToastNotification notification, IWinRtInterop interop)
     {
+        _interop = interop;
         Notifier = notifier;
         _notification = new ComRef<IToastNotification>(notification);
         CaptureAndApplyProperties(content);
@@ -82,7 +84,7 @@ internal class InternalNotificationHandle : FenestraComponent
 
         try
         {
-            using var pXmlDoc = new XmlToast(toast);
+            using var pXmlDoc = new XmlToast(toast, _interop);
             _notification = new ComRef<IToastNotification>(pXmlDoc.CreateNotificationRcw());
 
             CaptureAndApplyProperties(toast);
@@ -161,7 +163,7 @@ internal class InternalNotificationHandle : FenestraComponent
 
         if (pArgs != IntPtr.Zero)
         {
-            using var args = WinRtToastInterop.BorrowPointer<IToastActivatedEventArgs>(pArgs);
+            using var args = _interop.BorrowPointer<IToastActivatedEventArgs>(pArgs);
             if (args != null && args.Value.get_Arguments(out var value) == 0)
                 arguments = value ?? "";
 
@@ -176,7 +178,7 @@ internal class InternalNotificationHandle : FenestraComponent
         var reason = 0;
         if (pArgs != IntPtr.Zero)
         {
-            using var args = WinRtToastInterop.BorrowPointer<IToastDismissedEventArgs>(pArgs);
+            using var args = _interop.BorrowPointer<IToastDismissedEventArgs>(pArgs);
             if (args != null) args.Value.get_Reason(out reason);
         }
 
@@ -188,7 +190,7 @@ internal class InternalNotificationHandle : FenestraComponent
         var errorCode = 0;
         if (pArgs != IntPtr.Zero)
         {
-            using var args = WinRtToastInterop.BorrowPointer<IToastFailedEventArgs>(pArgs);
+            using var args = _interop.BorrowPointer<IToastFailedEventArgs>(pArgs);
             if (args != null) args.Value.get_ErrorCode(out errorCode);
         }
 
@@ -197,25 +199,25 @@ internal class InternalNotificationHandle : FenestraComponent
 
     // --- UserInput parsing (IToastActivatedEventArgs2 → IPropertySet → iterate) ---
 
-    private static void ReadUserInput(IntPtr pArgs, Dictionary<string, string> result)
+    private void ReadUserInput(IntPtr pArgs, Dictionary<string, string> result)
     {
-        using var args2 = WinRtToastInterop.BorrowPointer<IToastActivatedEventArgs2>(pArgs);
+        using var args2 = _interop.BorrowPointer<IToastActivatedEventArgs2>(pArgs);
         if (args2 == null) return;
 
         if (args2.Value.get_UserInput(out var pPropSet) != 0 || pPropSet == IntPtr.Zero) return;
 
-        using var iterable = WinRtToastInterop.CastPointer<IIterableKvpStringObject>(pPropSet);
+        using var iterable = _interop.CastPointer<IIterableKvpStringObject>(pPropSet);
         if (iterable == null) return;
 
         if (iterable.Value.First(out var pIter) != 0 || pIter == IntPtr.Zero) return;
 
-        using var iterator = WinRtToastInterop.CastPointer<IIteratorKvpStringObject>(pIter);
+        using var iterator = _interop.CastPointer<IIteratorKvpStringObject>(pIter);
         if (iterator == null) return;
 
         IterateUserInputPairs(iterator.Value, result);
     }
 
-    private static void IterateUserInputPairs(IIteratorKvpStringObject iterator, Dictionary<string, string> result)
+    private void IterateUserInputPairs(IIteratorKvpStringObject iterator, Dictionary<string, string> result)
     {
         while (true)
         {
@@ -224,7 +226,7 @@ internal class InternalNotificationHandle : FenestraComponent
 
             if (iterator.get_Current(out var pKvp) == 0 && pKvp != IntPtr.Zero)
             {
-                using var kvp = WinRtToastInterop.CastPointer<IKeyValuePairStringObject>(pKvp);
+                using var kvp = _interop.CastPointer<IKeyValuePairStringObject>(pKvp);
                 if (kvp != null)
                 {
                     kvp.Value.get_Key(out var key);
@@ -239,12 +241,12 @@ internal class InternalNotificationHandle : FenestraComponent
         }
     }
 
-    private static string ReadObjectValueAsString(IKeyValuePairStringObject kvp)
+    private string ReadObjectValueAsString(IKeyValuePairStringObject kvp)
     {
         if (kvp.get_Value(out var pValue) != 0 || pValue == IntPtr.Zero)
             return "";
 
-        using var propVal = WinRtToastInterop.CastPointer<IPropertyValue>(pValue);
+        using var propVal = _interop.CastPointer<IPropertyValue>(pValue);
         if (propVal == null) return "";
 
         return propVal.Value.GetString(out var value) == 0 ? value ?? "" : "";

@@ -11,6 +11,7 @@ namespace Fenestra.Windows.Native.Toast;
 /// </summary>
 internal sealed class NativeToastNotifier : IDisposable
 {
+    private readonly IWinRtInterop _interop;
     private readonly ComRef<IToastNotifier> _notifier;
     private readonly ComRef<IToastNotificationHistory>? _history;
     private bool _disposed;
@@ -18,9 +19,10 @@ internal sealed class NativeToastNotifier : IDisposable
     /// <summary>Direct access to the toast notification history interface. Null if unsupported.</summary>
     public IToastNotificationHistory? History => _history?.Value;
 
-    public NativeToastNotifier(string appId)
+    public NativeToastNotifier(string appId, IWinRtInterop interop)
     {
-        using var manager = WinRtToastInterop.GetActivationFactory<IToastNotificationManagerStatics>(
+        _interop = interop;
+        using var manager = interop.GetActivationFactory<IToastNotificationManagerStatics>(
             "Windows.UI.Notifications.ToastNotificationManager", IID_IToastNotificationManagerStatics)
             ?? throw new InvalidOperationException("Failed to get ToastNotificationManager activation factory.");
 
@@ -32,14 +34,14 @@ internal sealed class NativeToastNotifier : IDisposable
                 throw new InvalidOperationException($"CreateToastNotifier failed for appId '{appId}'.");
         }
 
-        _notifier = WinRtToastInterop.CastPointer<IToastNotifier>(pNotifier)
+        _notifier = _interop.CastPointer<IToastNotifier>(pNotifier)
             ?? throw new InvalidOperationException("Failed to wrap IToastNotifier.");
 
         // Obtain toast history (optional — may not be supported on all OS versions)
-        using var manager2 = WinRtToastInterop.GetActivationFactory<IToastNotificationManagerStatics2>(
+        using var manager2 = _interop.GetActivationFactory<IToastNotificationManagerStatics2>(
             "Windows.UI.Notifications.ToastNotificationManager", IID_IToastNotificationManagerStatics2);
         if (manager2 != null && manager2.Value.get_History(out var pHistory) == 0 && pHistory != IntPtr.Zero)
-            _history = WinRtToastInterop.CastPointer<IToastNotificationHistory>(pHistory);
+            _history = _interop.CastPointer<IToastNotificationHistory>(pHistory);
     }
 
     // --- Show / Hide ---
@@ -64,33 +66,6 @@ internal sealed class NativeToastNotifier : IDisposable
         return (NotificationSetting)setting;
     }
 
-    // --- Notification property setters ---
-
-    public void SetTag(IToastNotification notification, string tag)
-    {
-        if (notification is IToastNotification2 n) n.put_Tag(tag);
-    }
-
-    public void SetGroup(IToastNotification notification, string group)
-    {
-        if (notification is IToastNotification2 n) n.put_Group(group);
-    }
-
-    public void SetSuppressPopup(IToastNotification notification, bool value)
-    {
-        if (notification is IToastNotification2 n) n.put_SuppressPopup(value ? 1 : 0);
-    }
-
-    public void SetPriority(IToastNotification notification, ToastPriority priority)
-    {
-        if (notification is IToastNotification4 n) n.put_Priority((int)priority);
-    }
-
-    public void SetExpiresOnReboot(IToastNotification notification, bool value)
-    {
-        if (notification is IToastNotification6 n) n.put_ExpiresOnReboot(value ? 1 : 0);
-    }
-
     public void SetExpirationTime(IToastNotification notification, DateTimeOffset expirationTime)
     {
         var pBoxed = BoxDateTime(expirationTime);
@@ -99,85 +74,18 @@ internal sealed class NativeToastNotifier : IDisposable
         finally { Marshal.Release(pBoxed); }
     }
 
-    public void SetNotificationMirroring(IToastNotification notification, NotificationMirroring value)
-    {
-        if (notification is IToastNotification3 n) n.put_NotificationMirroring((int)value);
-    }
-
-    public void SetRemoteId(IToastNotification notification, string remoteId)
-    {
-        if (notification is IToastNotification3 n) n.put_RemoteId(remoteId);
-    }
-
-    // --- Notification property getters ---
-
-    public string? GetTag(IToastNotification notification)
-        => notification is IToastNotification2 n && n.get_Tag(out var r) == 0 ? r : null;
-
-    public string? GetGroup(IToastNotification notification)
-        => notification is IToastNotification2 n && n.get_Group(out var r) == 0 ? r : null;
-
-    public bool GetSuppressPopup(IToastNotification notification)
-        => notification is IToastNotification2 n && n.get_SuppressPopup(out var r) == 0 && r != 0;
-
-    public ToastPriority GetPriority(IToastNotification notification)
-        => notification is IToastNotification4 n && n.get_Priority(out var r) == 0 ? (ToastPriority)r : ToastPriority.Default;
-
-    public bool GetExpiresOnReboot(IToastNotification notification)
-        => notification is IToastNotification6 n && n.get_ExpiresOnReboot(out var r) == 0 && r != 0;
-
-    public NotificationMirroring GetNotificationMirroring(IToastNotification notification)
-        => notification is IToastNotification3 n && n.get_NotificationMirroring(out var r) == 0 ? (NotificationMirroring)r : NotificationMirroring.Allowed;
-
-    public string? GetRemoteId(IToastNotification notification)
-        => notification is IToastNotification3 n && n.get_RemoteId(out var r) == 0 ? r : null;
-
-    // --- Events ---
-
-    public long AddActivatedHandler(IToastNotification notification, IntPtr pHandler)
-    {
-        notification.add_Activated(pHandler, out var token);
-        return token;
-    }
-
-    public long AddDismissedHandler(IToastNotification notification, IntPtr pHandler)
-    {
-        notification.add_Dismissed(pHandler, out var token);
-        return token;
-    }
-
-    public long AddFailedHandler(IToastNotification notification, IntPtr pHandler)
-    {
-        notification.add_Failed(pHandler, out var token);
-        return token;
-    }
-
     // --- Scheduling ---
 
     public IScheduledToastNotification CreateScheduledToast(object xmlDoc, DateTimeOffset deliveryTime)
     {
-        using var factory = WinRtToastInterop.GetActivationFactory<IScheduledToastNotificationFactory>(
+        using var factory = _interop.GetActivationFactory<IScheduledToastNotificationFactory>(
             "Windows.UI.Notifications.ScheduledToastNotification", IID_IScheduledToastNotificationFactory)
             ?? throw new InvalidOperationException("Failed to get ScheduledToastNotification factory.");
 
         var hr = factory.Value.CreateScheduledToastNotification(xmlDoc, deliveryTime.UtcDateTime.ToFileTimeUtc(), out var pResult);
         if (hr < 0) throw new COMException($"CreateScheduledToastNotification failed. HRESULT=0x{hr:X8}", hr);
 
-        return WinRtToastInterop.CastPointer<IScheduledToastNotification>(pResult)?.Value
-            ?? throw new InvalidOperationException("Failed to wrap IScheduledToastNotification.");
-    }
-
-    public IScheduledToastNotification CreateScheduledToastRecurring(object xmlDoc, DateTimeOffset deliveryTime, TimeSpan snoozeInterval, uint maxSnoozeCount)
-    {
-        using var factory = WinRtToastInterop.GetActivationFactory<IScheduledToastNotificationFactory>(
-            "Windows.UI.Notifications.ScheduledToastNotification", IID_IScheduledToastNotificationFactory)
-            ?? throw new InvalidOperationException("Failed to get ScheduledToastNotification factory.");
-
-        var hr = factory.Value.CreateScheduledToastNotificationRecurring(
-            xmlDoc, deliveryTime.UtcDateTime.ToFileTimeUtc(), snoozeInterval.Ticks, maxSnoozeCount, out var pResult);
-        if (hr < 0) throw new COMException($"CreateScheduledToastNotificationRecurring failed. HRESULT=0x{hr:X8}", hr);
-
-        return WinRtToastInterop.CastPointer<IScheduledToastNotification>(pResult)?.Value
+        return _interop.CastPointer<IScheduledToastNotification>(pResult)?.Value
             ?? throw new InvalidOperationException("Failed to wrap IScheduledToastNotification.");
     }
 
@@ -214,9 +122,9 @@ internal sealed class NativeToastNotifier : IDisposable
 
     // --- Private ---
 
-    private static ComRef<INotificationData>? CreateNotificationData(Dictionary<string, string> data, uint sequenceNumber)
+    private ComRef<INotificationData>? CreateNotificationData(Dictionary<string, string> data, uint sequenceNumber)
     {
-        var notifData = WinRtToastInterop.ActivateInstance<INotificationData>("Windows.UI.Notifications.NotificationData");
+        var notifData = _interop.ActivateInstance<INotificationData>("Windows.UI.Notifications.NotificationData");
         if (notifData == null) return null;
 
         notifData.Value.put_SequenceNumber(sequenceNumber);
@@ -231,9 +139,9 @@ internal sealed class NativeToastNotifier : IDisposable
         return notifData;
     }
 
-    private static IntPtr BoxDateTime(DateTimeOffset value)
+    private IntPtr BoxDateTime(DateTimeOffset value)
     {
-        using var factory = WinRtToastInterop.GetActivationFactory<IPropertyValueStatics>(
+        using var factory = _interop.GetActivationFactory<IPropertyValueStatics>(
             "Windows.Foundation.PropertyValue", IID_IPropertyValueStatics);
         if (factory == null) return IntPtr.Zero;
 
