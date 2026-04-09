@@ -93,4 +93,25 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
         return services;
     }
+
+    /// <summary>
+    /// Registers the localization service (<see cref="ILocalizationService"/>). Reads the
+    /// persisted culture at startup (falling back to OS culture, then the configured
+    /// default), applies it to the process, and allows runtime changes via
+    /// <see cref="ILocalizationService.SetCulture"/>. Must be resolved at startup so the
+    /// culture is applied before any UI materializes. See <c>docs/localization.md</c>.
+    /// </summary>
+    public static IServiceCollection AddWindowsLocalization(
+        this IServiceCollection services,
+        Action<LocalizationOptions> configure)
+    {
+        if (services is null) throw new ArgumentNullException(nameof(services));
+        if (configure is null) throw new ArgumentNullException(nameof(configure));
+
+        var options = new LocalizationOptions();
+        configure(options);
+        services.AddSingleton(options);
+        services.AddSingleton<ILocalizationService, LocalizationService>();
+        return services;
+    }
 }

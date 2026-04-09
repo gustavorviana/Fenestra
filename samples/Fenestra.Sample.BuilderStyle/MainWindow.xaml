@@ -80,6 +80,24 @@
             </StackPanel>
         </GroupBox>
 
+        <!-- Localization -->
+        <GroupBox Header="Localization" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <TextBlock x:Name="LocGreetingText" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,5" />
+                <TextBlock x:Name="LocWelcomeText" HorizontalAlignment="Center" Margin="0,0,0,5" />
+                <TextBlock x:Name="LocCurrentText" HorizontalAlignment="Center" Foreground="Gray" />
+                <TextBlock x:Name="LocDateText" HorizontalAlignment="Center" Foreground="Gray" />
+                <TextBlock x:Name="LocNumberText" HorizontalAlignment="Center" Foreground="Gray" />
+                <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">
+                    <Button Content="en-US" Click="OnSetEnUs" Margin="0,0,5,0" />
+                    <Button Content="pt-BR" Click="OnSetPtBr" Margin="0,0,5,0" />
+                    <Button Content="es-ES" Click="OnSetEsEs" />
+                </WrapPanel>
+                <TextBlock x:Name="LocPromptText"
+                           TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,5,0,0" />
+            </StackPanel>
+        </GroupBox>
+
         <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="Gray" />
     </StackPanel>
 </Window>

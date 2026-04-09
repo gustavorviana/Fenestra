@@ -9,6 +9,11 @@ builder.Services.AddWpfMinimizeToTray();
 builder.Services.AddWindowsCredentialVault();
 builder.Services.AddWindowsIdleDetection(opts => opts.Threshold = TimeSpan.FromSeconds(10));
 builder.Services.AddWindowsAppLifecycle();
+builder.Services.AddWindowsLocalization(opts =>
+{
+    opts.Supported = new[] { "en-US", "pt-BR", "es-ES" };
+    opts.Default = "en-US";
+});
 builder.RegisterWindows();
 
 var app = builder.Build();

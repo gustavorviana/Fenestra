@@ -1,7 +1,9 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
+using Fenestra.Sample.BuilderStyle.Resources;
 using Fenestra.Windows;
 using Fenestra.Windows.Models;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -15,6 +17,7 @@ public partial class MainWindow : Window, IMinimizeToTray
     private readonly ICredentialVault _vault;
     private readonly IIdleDetectionService _idle;
     private readonly IAppLifecycleService _lifecycle;
+    private readonly ILocalizationService _localization;
     private readonly DispatcherTimer _idleUiTimer;
     private ITaskbarProgress? _progress;
 
@@ -24,7 +27,8 @@ public partial class MainWindow : Window, IMinimizeToTray
         ITrayIconService tray,
         ICredentialVault vault,
         IIdleDetectionService idle,
-        IAppLifecycleService lifecycle)
+        IAppLifecycleService lifecycle,
+        ILocalizationService localization)
     {
         InitializeComponent();
         _dialogs = dialogs;
@@ -33,6 +37,7 @@ public partial class MainWindow : Window, IMinimizeToTray
         _vault = vault;
         _idle = idle;
         _lifecycle = lifecycle;
+        _localization = localization;
 
         // Idle detection — wire events and a local timer to refresh the "Idle time" text.
         _idle.BecameIdle += (_, _) => IdleStatusText.Text = "Status: IDLE (no input for 10s)";
@@ -47,6 +52,10 @@ public partial class MainWindow : Window, IMinimizeToTray
         LifecyclePrevVersionText.Text = $"Previous version: {_lifecycle.PreviousVersion?.ToString() ?? "(none)"}";
         LifecycleInstallDateText.Text = $"First install: {_lifecycle.FirstInstallDate:yyyy-MM-dd HH:mm:ss zzz}";
         LifecycleLaunchCountText.Text = $"Launch count: {_lifecycle.LaunchCount}";
+
+        // Localization — initial render + subscribe to live changes.
+        UpdateLocalizationDisplay();
+        _localization.CultureChanged += (_, _) => Dispatcher.Invoke(UpdateLocalizationDisplay);
 
         _tray.SetTooltip("Fenestra Sample");
         _tray.Click += (_, _) =>
@@ -211,4 +220,32 @@ public partial class MainWindow : Window, IMinimizeToTray
         _vault.Delete(BytesKey);
         StatusText.Text = "Deleted all sample credentials.";
     }
+
+    // --- Localization ---
+
+    private void UpdateLocalizationDisplay()
+    {
+        var c = _localization.CurrentCulture;
+
+        // These come from the .resx files (Strings.resx / Strings.pt-BR.resx / Strings.es-ES.resx)
+        // ResourceManager picks the right satellite assembly based on CurrentUICulture,
+        // which Fenestra's LocalizationService just updated via SetCulture.
+        LocGreetingText.Text = Strings.Greeting;
+        LocWelcomeText.Text = Strings.WelcomeMessage;
+        LocPromptText.Text = Strings.ChangeCulturePrompt;
+
+        // These come from CurrentCulture (date/number formatting, NOT translation).
+        LocCurrentText.Text = $"{Strings.LanguageLabel}: {c.Name} ({c.NativeName})";
+        LocDateText.Text = $"Date: {DateTime.Now.ToString("D", c)}";
+        LocNumberText.Text = $"Number: {1234567.89.ToString("N", c)}";
+    }
+
+    private void OnSetEnUs(object sender, RoutedEventArgs e)
+        => _localization.SetCulture(CultureInfo.GetCultureInfo("en-US"));
+
+    private void OnSetPtBr(object sender, RoutedEventArgs e)
+        => _localization.SetCulture(CultureInfo.GetCultureInfo("pt-BR"));
+
+    private void OnSetEsEs(object sender, RoutedEventArgs e)
+        => _localization.SetCulture(CultureInfo.GetCultureInfo("es-ES"));
 }

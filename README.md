@@ -266,6 +266,7 @@ Fenestra is modular. Each feature is opt-in via the `FenestraBuilder`:
 | Credential Vault (DPAPI) | `AddWindowsCredentialVault()` | [Credential Vault](./docs/credential-vault.md) |
 | Idle Detection | `AddWindowsIdleDetection()` | [Idle Detection](./docs/idle-detection.md) |
 | App Lifecycle (first run, upgrade, launch count) | `AddWindowsAppLifecycle()` | [App Lifecycle](./docs/app-lifecycle.md) |
+| Localization (persist + switch culture) | `AddWindowsLocalization()` | [Localization](./docs/localization.md) |
 | Event Bus | Automatic | [Event Bus](./event-bus.md) |
 | Taskbar Progress | Automatic | [Taskbar Progress](./taskbar-progress.md) |
 | Platform Detection | Static class | [Platform](./platform.md) |
@@ -298,6 +299,7 @@ These require a `Use*()` call on the builder:
 - `ICredentialVault` -- via `AddWindowsCredentialVault()`
 - `IIdleDetectionService` -- via `AddWindowsIdleDetection()`
 - `IAppLifecycleService` -- via `AddWindowsAppLifecycle()`
+- `ILocalizationService` -- via `AddWindowsLocalization()`
 
 ## Architecture
 
