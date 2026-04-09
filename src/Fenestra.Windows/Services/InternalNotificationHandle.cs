@@ -11,6 +11,7 @@ internal class InternalNotificationHandle : FenestraComponent
     private readonly IWinRtInterop _interop;
     private readonly IXmlToastFactory _xmlToastFactory;
     private readonly ITypedEventHandlerFactory _eventHandlerFactory;
+    private readonly Func<IToastNotification, IComRef<IToastNotification>> _wrapNotification;
     private IComRef<IToastNotification> _notification;
     private IntPtr _activatedHandler;
     private IntPtr _dismissedHandler;
@@ -36,13 +37,15 @@ internal class InternalNotificationHandle : FenestraComponent
         IToastNotification notification,
         IWinRtInterop interop,
         IXmlToastFactory? xmlToastFactory = null,
-        ITypedEventHandlerFactory? eventHandlerFactory = null)
+        ITypedEventHandlerFactory? eventHandlerFactory = null,
+        Func<IToastNotification, IComRef<IToastNotification>>? wrapNotification = null)
     {
         _interop = interop;
         _xmlToastFactory = xmlToastFactory ?? DefaultXmlToastFactory.Instance;
         _eventHandlerFactory = eventHandlerFactory ?? DefaultTypedEventHandlerFactory.Instance;
+        _wrapNotification = wrapNotification ?? (n => new ComRef<IToastNotification>(n));
         Notifier = notifier;
-        _notification = new ComRef<IToastNotification>(notification);
+        _notification = _wrapNotification(notification);
         CaptureAndApplyProperties(content);
     }
 
@@ -95,7 +98,7 @@ internal class InternalNotificationHandle : FenestraComponent
         try
         {
             using var pXmlDoc = _xmlToastFactory.Create(toast, _interop);
-            _notification = new ComRef<IToastNotification>(pXmlDoc.CreateNotificationRcw());
+            _notification = _wrapNotification(pXmlDoc.CreateNotificationRcw());
 
             CaptureAndApplyProperties(toast);
             Show(toast.ProgressTracker);
