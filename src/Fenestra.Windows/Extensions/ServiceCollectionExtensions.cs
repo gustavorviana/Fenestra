@@ -81,4 +81,16 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IIdleDetectionService, IdleDetectionService>();
         return services;
     }
+
+    /// <summary>
+    /// Registers the app lifecycle service (<see cref="IAppLifecycleService"/>).
+    /// Tracks first run, version upgrades, install date, and launch count via the registry.
+    /// Must be resolved at startup (typically in <c>OnReady</c>) so that <c>LaunchCount</c>
+    /// increments once per launch. See <c>docs/app-lifecycle.md</c>.
+    /// </summary>
+    public static IServiceCollection AddWindowsAppLifecycle(this IServiceCollection services)
+    {
+        services.AddSingleton<IAppLifecycleService, AppLifecycleService>();
+        return services;
+    }
 }

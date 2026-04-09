@@ -67,6 +67,19 @@
             </StackPanel>
         </GroupBox>
 
+        <!-- App Lifecycle -->
+        <GroupBox Header="App Lifecycle" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <TextBlock x:Name="LifecycleFirstRunText" />
+                <TextBlock x:Name="LifecycleVersionText" />
+                <TextBlock x:Name="LifecyclePrevVersionText" />
+                <TextBlock x:Name="LifecycleInstallDateText" />
+                <TextBlock x:Name="LifecycleLaunchCountText" />
+                <TextBlock Text="Close and reopen to see LaunchCount increment. Delete HKCU\SOFTWARE\Fenestra.Sample.BuilderStyle\Lifecycle to reset."
+                           TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,5,0,0" />
+            </StackPanel>
+        </GroupBox>
+
         <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="Gray" />
     </StackPanel>
 </Window>

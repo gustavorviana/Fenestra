@@ -14,6 +14,7 @@ public partial class MainWindow : Window, IMinimizeToTray
     private readonly ITrayIconService _tray;
     private readonly ICredentialVault _vault;
     private readonly IIdleDetectionService _idle;
+    private readonly IAppLifecycleService _lifecycle;
     private readonly DispatcherTimer _idleUiTimer;
     private ITaskbarProgress? _progress;
 
@@ -22,7 +23,8 @@ public partial class MainWindow : Window, IMinimizeToTray
         ITaskbarProvider taskbar,
         ITrayIconService tray,
         ICredentialVault vault,
-        IIdleDetectionService idle)
+        IIdleDetectionService idle,
+        IAppLifecycleService lifecycle)
     {
         InitializeComponent();
         _dialogs = dialogs;
@@ -30,6 +32,7 @@ public partial class MainWindow : Window, IMinimizeToTray
         _tray = tray;
         _vault = vault;
         _idle = idle;
+        _lifecycle = lifecycle;
 
         // Idle detection — wire events and a local timer to refresh the "Idle time" text.
         _idle.BecameIdle += (_, _) => IdleStatusText.Text = "Status: IDLE (no input for 10s)";
@@ -37,6 +40,13 @@ public partial class MainWindow : Window, IMinimizeToTray
         _idleUiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _idleUiTimer.Tick += (_, _) => IdleTimeText.Text = $"Idle time: {_idle.IdleTime.TotalSeconds:F0}s";
         _idleUiTimer.Start();
+
+        // App lifecycle — populate the labels once at startup (snapshot semantics).
+        LifecycleFirstRunText.Text = $"First run ever: {(_lifecycle.IsFirstRun ? "YES" : "no")}";
+        LifecycleVersionText.Text = $"First run of version: {(_lifecycle.IsFirstRunOfVersion ? "YES" : "no")}";
+        LifecyclePrevVersionText.Text = $"Previous version: {_lifecycle.PreviousVersion?.ToString() ?? "(none)"}";
+        LifecycleInstallDateText.Text = $"First install: {_lifecycle.FirstInstallDate:yyyy-MM-dd HH:mm:ss zzz}";
+        LifecycleLaunchCountText.Text = $"Launch count: {_lifecycle.LaunchCount}";
 
         _tray.SetTooltip("Fenestra Sample");
         _tray.Click += (_, _) =>
