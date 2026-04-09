@@ -41,6 +41,22 @@
             </WrapPanel>
         </GroupBox>
 
+        <!-- Credential Vault -->
+        <GroupBox Header="Credential Vault" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,5">
+                    <Button Content="Store (string)" Click="OnCredStoreString" Margin="0,0,5,0" />
+                    <Button Content="Read (string)" Click="OnCredReadString" Margin="0,0,5,0" />
+                    <Button Content="Store (bytes)" Click="OnCredStoreBytes" Margin="0,0,5,0" />
+                    <Button Content="Read (bytes)" Click="OnCredReadBytes" Margin="0,0,5,0" />
+                    <Button Content="List" Click="OnCredList" Margin="0,0,5,0" />
+                    <Button Content="Delete All" Click="OnCredDeleteAll" />
+                </WrapPanel>
+                <TextBlock Text="Open Control Panel → Credential Manager → Windows Credentials to see entries prefixed with the app id."
+                           TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" />
+            </StackPanel>
+        </GroupBox>
+
         <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="Gray" />
     </StackPanel>
 </Window>

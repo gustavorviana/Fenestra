@@ -51,4 +51,15 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IThemeService, ThemeService>();
         return services;
     }
+
+    /// <summary>
+    /// Registers the Windows Credential Vault service (<see cref="ICredentialVault"/>).
+    /// Provides DPAPI-encrypted per-user storage for secrets via the Credential Manager.
+    /// Requires Windows. See <c>docs/credential-vault.md</c> for the security model.
+    /// </summary>
+    public static IServiceCollection AddWindowsCredentialVault(this IServiceCollection services)
+    {
+        services.AddSingleton<ICredentialVault, CredentialVault>();
+        return services;
+    }
 }

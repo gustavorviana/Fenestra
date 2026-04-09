@@ -263,6 +263,7 @@ Fenestra is modular. Each feature is opt-in via the `FenestraBuilder`:
 | Auto-Start (Windows startup) | `UseWindowsAutoStart()` | [Auto-Start](./auto-start.md) |
 | Global Hotkeys | `UseWindowsGlobalHotkeys()` | [Global Hotkeys](./global-hotkeys.md) |
 | Theme Detection (dark/light) | `UseWindowsThemeDetection()` | [Theme Detection](./theme-detection.md) |
+| Credential Vault (DPAPI) | `AddWindowsCredentialVault()` | [Credential Vault](./docs/credential-vault.md) |
 | Event Bus | Automatic | [Event Bus](./event-bus.md) |
 | Taskbar Progress | Automatic | [Taskbar Progress](./taskbar-progress.md) |
 | Platform Detection | Static class | [Platform](./platform.md) |
@@ -292,6 +293,7 @@ These require a `Use*()` call on the builder:
 - `IGlobalHotkeyService` -- via `UseWindowsGlobalHotkeys()`
 - `IAutoStartService` -- via `UseWindowsAutoStart()`
 - `IThemeService` -- via `UseWindowsThemeDetection()`
+- `ICredentialVault` -- via `AddWindowsCredentialVault()`
 
 ## Architecture
 

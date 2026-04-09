@@ -11,14 +11,16 @@ public partial class MainWindow : Window, IMinimizeToTray
     private readonly IDialogService _dialogs;
     private readonly ITaskbarProvider _taskbar;
     private readonly ITrayIconService _tray;
+    private readonly ICredentialVault _vault;
     private ITaskbarProgress? _progress;
 
-    public MainWindow(IDialogService dialogs, ITaskbarProvider taskbar, ITrayIconService tray)
+    public MainWindow(IDialogService dialogs, ITaskbarProvider taskbar, ITrayIconService tray, ICredentialVault vault)
     {
         InitializeComponent();
         _dialogs = dialogs;
         _taskbar = taskbar;
         _tray = tray;
+        _vault = vault;
 
         _tray.SetTooltip("Fenestra Sample");
         _tray.Click += (_, _) =>
@@ -128,5 +130,59 @@ public partial class MainWindow : Window, IMinimizeToTray
             FenestraMessageButton.YesNo,
             FenestraMessageIcon.Question);
         StatusText.Text = $"Message result: {result}";
+    }
+
+    // --- Credential Vault ---
+
+    private const string StringKey = "sample-api-token";
+    private const string BytesKey = "sample-binary-key";
+
+    private void OnCredStoreString(object sender, RoutedEventArgs e)
+    {
+        _vault.Store(StringKey, "alice", "ghp_sample_token_xyz123");
+        StatusText.Text = $"Stored string credential '{StringKey}'. Check Credential Manager.";
+    }
+
+    private void OnCredReadString(object sender, RoutedEventArgs e)
+    {
+        var cred = _vault.Read(StringKey);
+        StatusText.Text = cred is null
+            ? $"No credential found for '{StringKey}'. Click 'Store (string)' first."
+            // ToString() masks the secret — safe to log
+            : $"Read: {cred}";
+    }
+
+    private void OnCredStoreBytes(object sender, RoutedEventArgs e)
+    {
+        var randomKey = new byte[] { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08 };
+        _vault.Store(BytesKey, "alice", randomKey);
+        StatusText.Text = $"Stored {randomKey.Length}-byte credential '{BytesKey}'.";
+    }
+
+    private void OnCredReadBytes(object sender, RoutedEventArgs e)
+    {
+        using var stored = _vault.ReadBytes(BytesKey);
+        if (stored is null)
+        {
+            StatusText.Text = $"No credential found for '{BytesKey}'. Click 'Store (bytes)' first.";
+            return;
+        }
+        // Use stored.Secret inside the using scope; on Dispose it gets zero-filled.
+        StatusText.Text = $"Read {stored.Secret.Length} bytes from '{BytesKey}' (buffer will be zeroed on scope exit).";
+    }
+
+    private void OnCredList(object sender, RoutedEventArgs e)
+    {
+        var targets = _vault.Enumerate();
+        StatusText.Text = targets.Count == 0
+            ? "No credentials stored by this app yet."
+            : $"Credentials: {string.Join(", ", targets)}";
+    }
+
+    private void OnCredDeleteAll(object sender, RoutedEventArgs e)
+    {
+        _vault.Delete(StringKey);
+        _vault.Delete(BytesKey);
+        StatusText.Text = "Deleted all sample credentials.";
     }
 }
