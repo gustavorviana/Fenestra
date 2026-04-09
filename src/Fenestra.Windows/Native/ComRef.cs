@@ -3,15 +3,25 @@ using System.Runtime.InteropServices;
 namespace Fenestra.Windows.Native;
 
 /// <summary>
+/// Abstraction over <see cref="ComRef{T}"/> so consumers can depend on the
+/// contract instead of the concrete RAII wrapper. Enables swapping in fakes
+/// during tests.
+/// </summary>
+internal interface IComRef<out T> : IDisposable where T : class
+{
+    T Value { get; }
+}
+
+/// <summary>
 /// RAII wrapper for COM RCW (Runtime Callable Wrapper) objects.
 /// Ensures <c>Marshal.ReleaseComObject</c> is called on <see cref="Dispose"/>,
 /// preventing COM reference leaks.
 /// <para>Usage: <c>using var factory = new ComRef&lt;IFoo&gt;(rcw);</c></para>
 /// <para>Null-safe: <c>using</c> on a null <c>ComRef</c> is a no-op.</para>
 /// </summary>
-internal sealed class ComRef<T> : IDisposable where T : class
+internal sealed class ComRef<T> : IComRef<T> where T : class
 {
-    public readonly T Value;
+    public T Value { get; }
 
     public ComRef(T value) => Value = value;
 

@@ -15,9 +15,10 @@ internal class ToastService : IToastService, IDisposable
     private readonly IWinRtInterop _interop;
     private readonly IThreadContext _threadContext;
     private readonly IApplicationActivator? _activator;
+    private readonly IXmlToastFactory _xmlToastFactory;
     private readonly List<ToastHandle> _active = new();
     private readonly List<ScheduledToastHandle> _scheduled = new();
-    private NativeToastNotifier? _notifier = null!;
+    private INativeToastNotifier? _notifier = null!;
     private bool _disposed;
 
     public IReadOnlyList<IToastHandle> Active
@@ -30,7 +31,14 @@ internal class ToastService : IToastService, IDisposable
         get { lock (_scheduled) return _scheduled.ToArray(); }
     }
 
-    public ToastService(AppInfo appInfo, IThreadContext threadContext, IWinRtInterop? interop = null, IApplicationActivator? activator = null, IWindowsNotificationRegistrationManager? registrationManager = null)
+    public ToastService(
+        AppInfo appInfo,
+        IThreadContext threadContext,
+        IWinRtInterop? interop = null,
+        IApplicationActivator? activator = null,
+        IWindowsNotificationRegistrationManager? registrationManager = null,
+        INativeToastNotifierFactory? notifierFactory = null,
+        IXmlToastFactory? xmlToastFactory = null)
     {
         Platform.EnsureWindows10();
 
@@ -38,10 +46,11 @@ internal class ToastService : IToastService, IDisposable
         _interop = interop ?? new WinRtInterop();
         _threadContext = threadContext;
         _activator = activator;
+        _xmlToastFactory = xmlToastFactory ?? DefaultXmlToastFactory.Instance;
 
         registrationManager?.EnsureRegistered();
         _interop.SetCurrentProcessExplicitAppUserModelID(_appId);
-        _notifier = new NativeToastNotifier(_appId, _interop);
+        _notifier = (notifierFactory ?? DefaultNativeToastNotifierFactory.Instance).Create(_appId, _interop);
     }
 
     public IToastHandle Show(ToastContent toast)
@@ -52,7 +61,7 @@ internal class ToastService : IToastService, IDisposable
         if (_notifier == null)
             return null!;
 
-        using var pXmlDoc = new XmlToast(toast, _interop);
+        using var pXmlDoc = _xmlToastFactory.Create(toast, _interop);
         var internalHandle = pXmlDoc.CreateNotification(_notifier!);
 
         var handle = new ToastHandle(this, internalHandle);
@@ -139,7 +148,7 @@ internal class ToastService : IToastService, IDisposable
         if (_notifier == null)
             throw new InvalidOperationException("ToastService is not initialized.");
 
-        using var xmlToast = new XmlToast(toast, _interop);
+        using var xmlToast = _xmlToastFactory.Create(toast, _interop);
         var scheduled = _notifier.CreateScheduledToast(xmlToast.XmlDocument, deliveryTime);
 
         // Apply tag/group if supported

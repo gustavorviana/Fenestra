@@ -8,7 +8,7 @@ namespace Fenestra.Windows.Native;
 /// </summary>
 internal sealed class WinRtInterop : IWinRtInterop
 {
-    public ComRef<T>? ActivateInstance<T>(string className) where T : class
+    public IComRef<T>? ActivateInstance<T>(string className) where T : class
     {
         using var hClass = HStringHandle.Create(className);
         var hr = RoActivateInstance(hClass, out var instance);
@@ -18,7 +18,7 @@ internal sealed class WinRtInterop : IWinRtInterop
         finally { Marshal.Release(instance); }
     }
 
-    public ComRef<T>? GetActivationFactory<T>(string className, Guid iid) where T : class
+    public IComRef<T>? GetActivationFactory<T>(string className, Guid iid) where T : class
     {
         using var hClass = HStringHandle.Create(className);
         var hr = RoGetActivationFactory(hClass, ref iid, out var factory);
@@ -28,7 +28,7 @@ internal sealed class WinRtInterop : IWinRtInterop
         finally { Marshal.Release(factory); }
     }
 
-    public ComRef<T>? CastPointer<T>(IntPtr pUnk) where T : class
+    public IComRef<T>? CastPointer<T>(IntPtr pUnk) where T : class
     {
         if (pUnk == IntPtr.Zero) return null;
         object? rcw = null;
@@ -45,7 +45,7 @@ internal sealed class WinRtInterop : IWinRtInterop
         finally { Marshal.Release(pUnk); }
     }
 
-    public ComRef<T>? BorrowPointer<T>(IntPtr pUnk) where T : class
+    public IComRef<T>? BorrowPointer<T>(IntPtr pUnk) where T : class
     {
         if (pUnk == IntPtr.Zero) return null;
         Marshal.AddRef(pUnk);

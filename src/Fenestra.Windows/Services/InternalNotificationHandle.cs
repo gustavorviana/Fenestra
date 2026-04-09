@@ -9,12 +9,14 @@ namespace Fenestra.Windows.Services;
 internal class InternalNotificationHandle : FenestraComponent
 {
     private readonly IWinRtInterop _interop;
-    private ComRef<IToastNotification> _notification;
+    private readonly IXmlToastFactory _xmlToastFactory;
+    private readonly ITypedEventHandlerFactory _eventHandlerFactory;
+    private IComRef<IToastNotification> _notification;
     private IntPtr _activatedHandler;
     private IntPtr _dismissedHandler;
     private IntPtr _failedHandler;
 
-    public NativeToastNotifier Notifier { get; }
+    public INativeToastNotifier Notifier { get; }
     public string? Group { get; private set; }
     public string? Tag { get; private set; }
     public bool SuppressPopup { get; private set; }
@@ -28,9 +30,17 @@ internal class InternalNotificationHandle : FenestraComponent
     public Action<ToastDismissalReason>? OnDismissed { get; set; }
     public Action<int>? OnFailed { get; set; }
 
-    public InternalNotificationHandle(NativeToastNotifier notifier, ToastContent content, IToastNotification notification, IWinRtInterop interop)
+    public InternalNotificationHandle(
+        INativeToastNotifier notifier,
+        ToastContent content,
+        IToastNotification notification,
+        IWinRtInterop interop,
+        IXmlToastFactory? xmlToastFactory = null,
+        ITypedEventHandlerFactory? eventHandlerFactory = null)
     {
         _interop = interop;
+        _xmlToastFactory = xmlToastFactory ?? DefaultXmlToastFactory.Instance;
+        _eventHandlerFactory = eventHandlerFactory ?? DefaultTypedEventHandlerFactory.Instance;
         Notifier = notifier;
         _notification = new ComRef<IToastNotification>(notification);
         CaptureAndApplyProperties(content);
@@ -84,7 +94,7 @@ internal class InternalNotificationHandle : FenestraComponent
 
         try
         {
-            using var pXmlDoc = new XmlToast(toast, _interop);
+            using var pXmlDoc = _xmlToastFactory.Create(toast, _interop);
             _notification = new ComRef<IToastNotification>(pXmlDoc.CreateNotificationRcw());
 
             CaptureAndApplyProperties(toast);
@@ -115,15 +125,15 @@ internal class InternalNotificationHandle : FenestraComponent
     {
         ReleaseEventHandlers();
 
-        _activatedHandler = TypedEventHandlerFactory.Create(
+        _activatedHandler = _eventHandlerFactory.Create(
             ToastInteropConstants.IID_TypedEventHandler_Activated,
             (_, args) => HandleActivated(args));
 
-        _dismissedHandler = TypedEventHandlerFactory.Create(
+        _dismissedHandler = _eventHandlerFactory.Create(
             ToastInteropConstants.IID_TypedEventHandler_Dismissed,
             (_, args) => HandleDismissed(args));
 
-        _failedHandler = TypedEventHandlerFactory.Create(
+        _failedHandler = _eventHandlerFactory.Create(
             ToastInteropConstants.IID_TypedEventHandler_Failed,
             (_, args) => HandleFailed(args));
 
@@ -154,10 +164,10 @@ internal class InternalNotificationHandle : FenestraComponent
         ReleaseHandler(ref _failedHandler);
     }
 
-    private static void ReleaseHandler(ref IntPtr handler)
+    private void ReleaseHandler(ref IntPtr handler)
     {
         if (handler == IntPtr.Zero) return;
-        TypedEventHandlerFactory.Release(handler);
+        _eventHandlerFactory.Release(handler);
         handler = IntPtr.Zero;
     }
 

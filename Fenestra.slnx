@@ -1,15 +1,17 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Fenestra.Core/Fenestra.Core.csproj" />
-    <Project Path="src/Fenestra.Windows/Fenestra.Windows.csproj" Id="a553c0d1-c1c9-48f2-84e8-b8c43f8eed14" />
     <Project Path="src/Fenestra.Windows.Wpf/Fenestra.Windows.Wpf.csproj" />
+    <Project Path="src/Fenestra.Windows/Fenestra.Windows.csproj" Id="a553c0d1-c1c9-48f2-84e8-b8c43f8eed14" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Fenestra.Tests/Fenestra.Tests.csproj" />
+    <Project Path="tests/Fenestra.Windows.Tests/Fenestra.Windows.Tests.csproj" Id="0ce889e5-bd14-4ed2-919d-f69e952ac639" />
+    <Project Path="tests/Fenestra.Windows.Wpf.Tests/Fenestra.Windows.Wpf.Tests.csproj" Id="505a7185-c41c-4849-8b39-40c419825e50" />
   </Folder>
   <Folder Name="/samples/">
-    <Project Path="samples/Fenestra.Sample.BuilderStyle/Fenestra.Sample.BuilderStyle.csproj" />
     <Project Path="samples/Fenestra.Sample.AppStyle/Fenestra.Sample.AppStyle.csproj" />
+    <Project Path="samples/Fenestra.Sample.BuilderStyle/Fenestra.Sample.BuilderStyle.csproj" />
     <Project Path="samples/Fenestra.Sample.BuilderWithApp/Fenestra.Sample.BuilderWithApp.csproj" />
   </Folder>
 </Solution>

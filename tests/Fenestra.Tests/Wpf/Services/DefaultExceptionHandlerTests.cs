@@ -1,3 +1,4 @@
+using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Wpf.Services;
 using Microsoft.Extensions.Logging;
@@ -8,11 +9,12 @@ namespace Fenestra.Tests.Wpf.Services;
 public class DefaultExceptionHandlerTests
 {
     private readonly ILogger<DefaultExceptionHandler> _logger = Substitute.For<ILogger<DefaultExceptionHandler>>();
+    private readonly IDialogService _dialogService = Substitute.For<IDialogService>();
     private readonly DefaultExceptionHandler _handler;
 
     public DefaultExceptionHandlerTests()
     {
-        _handler = new DefaultExceptionHandler(_logger);
+        _handler = new DefaultExceptionHandler(_logger, _dialogService);
     }
 
     [Fact]

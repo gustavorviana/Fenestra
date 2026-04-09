@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 
 namespace Fenestra.Windows.Native.Toast;
 
-internal class XmlToast : FenestraComponent
+internal class XmlToast : FenestraComponent, IXmlToast
 {
     private readonly IWinRtInterop _interop;
-    private readonly ComRef<IXmlDocumentIO> _xmlDoc;
-    internal IXmlDocumentIO XmlDocument => _xmlDoc.Value;
+    private readonly IComRef<IXmlDocumentIO> _xmlDoc;
+    public IXmlDocumentIO XmlDocument => _xmlDoc.Value;
     public ToastContent Content { get; }
 
     public XmlToast(ToastContent toast, IWinRtInterop interop)
@@ -25,7 +25,7 @@ internal class XmlToast : FenestraComponent
         if (hr < 0) throw new COMException($"LoadXml failed. HRESULT=0x{hr:X8}", hr);
     }
 
-    public InternalNotificationHandle CreateNotification(NativeToastNotifier notifier)
+    public InternalNotificationHandle CreateNotification(INativeToastNotifier notifier)
     {
         return new InternalNotificationHandle(notifier, Content, CreateNotificationRcw(), _interop);
     }

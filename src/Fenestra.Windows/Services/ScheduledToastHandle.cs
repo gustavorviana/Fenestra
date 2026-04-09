@@ -5,8 +5,8 @@ namespace Fenestra.Windows.Services;
 
 internal class ScheduledToastHandle : IScheduledToastHandle
 {
-    private readonly ComRef<IScheduledToastNotification> _scheduled;
-    private readonly NativeToastNotifier _notifier;
+    private readonly IComRef<IScheduledToastNotification> _scheduled;
+    private readonly INativeToastNotifier _notifier;
     private readonly ToastService _service;
     private bool _disposed;
 
@@ -18,7 +18,7 @@ internal class ScheduledToastHandle : IScheduledToastHandle
 
     internal ScheduledToastHandle(
         ToastService service,
-        NativeToastNotifier notifier,
+        INativeToastNotifier notifier,
         IScheduledToastNotification scheduled,
         string? tag,
         string? group,

@@ -5,6 +5,7 @@ using Fenestra.Wpf.Extensions;
 using Fenestra.Wpf.Native;
 using Fenestra.Wpf.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using System.Windows;
 
@@ -23,6 +24,13 @@ public class WpfFenestraBuilder : WindowsFenestraBuilder
 
     /// <summary>The main window type.</summary>
     internal Type? ShellType { get; set; }
+
+    public WpfFenestraBuilder()
+    {
+        Services.AddSingleton<IWindowManager, WindowManager>();
+        Services.AddSingleton<IDialogService, DialogService>();
+        Services.TryAddSingleton<IExceptionHandler, DefaultExceptionHandler>();
+    }
 
     /// <summary>Sets the main window type for the application.</summary>
     public WpfFenestraBuilder UseMainWindow<TShell>() where TShell : Window

@@ -1,17 +1,18 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
 using Microsoft.Extensions.Logging;
-using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 
 internal class DefaultExceptionHandler : IExceptionHandler
 {
     private readonly ILogger<DefaultExceptionHandler> _logger;
+    private readonly IDialogService _dialogService;
 
-    public DefaultExceptionHandler(ILogger<DefaultExceptionHandler> logger)
+    public DefaultExceptionHandler(ILogger<DefaultExceptionHandler> logger, IDialogService dialogService)
     {
         _logger = logger;
+        _dialogService = dialogService;
     }
 
     public void Handle(FenestraExceptionContext context)
@@ -27,15 +28,15 @@ internal class DefaultExceptionHandler : IExceptionHandler
 
         try
         {
-            MessageBox.Show(
-                "An unexpected error occurred. The application may need to restart.",
-                "Error",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            _dialogService.ShowMessage(
+                message: "An unexpected error occurred. The application may need to restart.",
+                title: "Error",
+                buttons: FenestraMessageButton.OK,
+                icon: FenestraMessageIcon.Error);
         }
-        catch
+        catch (Exception dialogException)
         {
-            // If MessageBox fails (e.g., no UI thread), silently continue
+            _logger.LogError(dialogException, "Failed to display exception dialog to the user.");
         }
 
         context.Handled = true;

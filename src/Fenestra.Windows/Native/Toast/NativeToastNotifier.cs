@@ -9,14 +9,14 @@ namespace Fenestra.Windows.Native.Toast;
 /// Handles show/hide, property get/set, event subscription, and data updates
 /// directly through WinRT COM interfaces.
 /// </summary>
-internal sealed class NativeToastNotifier : IDisposable
+internal sealed class NativeToastNotifier : INativeToastNotifier
 {
     private readonly IWinRtInterop _interop;
-    private readonly ComRef<IToastNotifier> _notifier;
-    private readonly ComRef<IToastNotificationHistory>? _history;
+    private readonly IComRef<IToastNotifier> _notifier;
+    private readonly IComRef<IToastNotificationHistory>? _history;
     // Lazy-cached factories — WinRT activation factories are singletons, safe to reuse
-    private ComRef<IPropertyValueStatics>? _propertyValueFactory;
-    private ComRef<IScheduledToastNotificationFactory>? _scheduledFactory;
+    private IComRef<IPropertyValueStatics>? _propertyValueFactory;
+    private IComRef<IScheduledToastNotificationFactory>? _scheduledFactory;
     private bool _disposed;
 
     /// <summary>Direct access to the toast notification history interface. Null if unsupported.</summary>
@@ -127,7 +127,7 @@ internal sealed class NativeToastNotifier : IDisposable
 
     // --- Private ---
 
-    private ComRef<INotificationData>? CreateNotificationData(Dictionary<string, string> data, uint sequenceNumber)
+    private IComRef<INotificationData>? CreateNotificationData(Dictionary<string, string> data, uint sequenceNumber)
     {
         var notifData = _interop.ActivateInstance<INotificationData>("Windows.UI.Notifications.NotificationData");
         if (notifData == null) return null;

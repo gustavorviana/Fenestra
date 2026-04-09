@@ -6,9 +6,9 @@ namespace Fenestra.Windows.Native;
 /// </summary>
 internal interface IWinRtInterop
 {
-    ComRef<T>? ActivateInstance<T>(string className) where T : class;
-    ComRef<T>? GetActivationFactory<T>(string className, Guid iid) where T : class;
-    ComRef<T>? CastPointer<T>(IntPtr pUnk) where T : class;
-    ComRef<T>? BorrowPointer<T>(IntPtr pUnk) where T : class;
+    IComRef<T>? ActivateInstance<T>(string className) where T : class;
+    IComRef<T>? GetActivationFactory<T>(string className, Guid iid) where T : class;
+    IComRef<T>? CastPointer<T>(IntPtr pUnk) where T : class;
+    IComRef<T>? BorrowPointer<T>(IntPtr pUnk) where T : class;
     void SetCurrentProcessExplicitAppUserModelID(string appID);
 }
