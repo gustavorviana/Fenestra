@@ -3,6 +3,7 @@ using Fenestra.Core.Models;
 using Fenestra.Windows;
 using Fenestra.Windows.Models;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace Fenestra.Sample.BuilderStyle;
 
@@ -12,15 +13,30 @@ public partial class MainWindow : Window, IMinimizeToTray
     private readonly ITaskbarProvider _taskbar;
     private readonly ITrayIconService _tray;
     private readonly ICredentialVault _vault;
+    private readonly IIdleDetectionService _idle;
+    private readonly DispatcherTimer _idleUiTimer;
     private ITaskbarProgress? _progress;
 
-    public MainWindow(IDialogService dialogs, ITaskbarProvider taskbar, ITrayIconService tray, ICredentialVault vault)
+    public MainWindow(
+        IDialogService dialogs,
+        ITaskbarProvider taskbar,
+        ITrayIconService tray,
+        ICredentialVault vault,
+        IIdleDetectionService idle)
     {
         InitializeComponent();
         _dialogs = dialogs;
         _taskbar = taskbar;
         _tray = tray;
         _vault = vault;
+        _idle = idle;
+
+        // Idle detection — wire events and a local timer to refresh the "Idle time" text.
+        _idle.BecameIdle += (_, _) => IdleStatusText.Text = "Status: IDLE (no input for 10s)";
+        _idle.BecameActive += (_, _) => IdleStatusText.Text = "Status: active";
+        _idleUiTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _idleUiTimer.Tick += (_, _) => IdleTimeText.Text = $"Idle time: {_idle.IdleTime.TotalSeconds:F0}s";
+        _idleUiTimer.Start();
 
         _tray.SetTooltip("Fenestra Sample");
         _tray.Click += (_, _) =>

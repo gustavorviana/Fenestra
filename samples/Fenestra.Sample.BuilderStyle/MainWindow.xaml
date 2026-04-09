@@ -57,6 +57,16 @@
             </StackPanel>
         </GroupBox>
 
+        <!-- Idle Detection -->
+        <GroupBox Header="Idle Detection" Margin="0,0,0,10">
+            <StackPanel Margin="10">
+                <TextBlock x:Name="IdleStatusText" Text="Status: active" FontWeight="Bold" HorizontalAlignment="Center" />
+                <TextBlock x:Name="IdleTimeText" Text="Idle time: 0s" HorizontalAlignment="Center" Foreground="Gray" />
+                <TextBlock Text="Threshold: 10s. Stop touching mouse/keyboard for 10s to see the status flip."
+                           TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,5,0,0" />
+            </StackPanel>
+        </GroupBox>
+
         <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="Gray" />
     </StackPanel>
 </Window>

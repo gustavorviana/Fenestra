@@ -7,6 +7,7 @@ var builder = FenestraApplication.CreateBuilder(args);
 builder.UseMainWindow<MainWindow>();
 builder.Services.AddWpfMinimizeToTray();
 builder.Services.AddWindowsCredentialVault();
+builder.Services.AddWindowsIdleDetection(opts => opts.Threshold = TimeSpan.FromSeconds(10));
 builder.RegisterWindows();
 
 var app = builder.Build();

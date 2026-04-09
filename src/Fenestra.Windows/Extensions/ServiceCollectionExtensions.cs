@@ -62,4 +62,23 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ICredentialVault, CredentialVault>();
         return services;
     }
+
+    /// <summary>
+    /// Registers the idle detection service (<see cref="IIdleDetectionService"/>).
+    /// Polls <c>GetLastInputInfo</c> on a pool-based <see cref="System.Threading.Timer"/> and
+    /// raises <c>BecameIdle</c>/<c>BecameActive</c> events on transitions. Framework-agnostic —
+    /// works in WPF, WinForms, console, and background Windows hosts. If an
+    /// <see cref="Fenestra.Core.IThreadContext"/> is registered (e.g., by <c>WpfFenestraBuilder</c>),
+    /// events are marshalled to the dispatcher thread automatically.
+    /// </summary>
+    public static IServiceCollection AddWindowsIdleDetection(
+        this IServiceCollection services,
+        Action<IdleDetectionOptions>? configure = null)
+    {
+        var options = new IdleDetectionOptions();
+        configure?.Invoke(options);
+        services.AddSingleton(options);
+        services.AddSingleton<IIdleDetectionService, IdleDetectionService>();
+        return services;
+    }
 }
