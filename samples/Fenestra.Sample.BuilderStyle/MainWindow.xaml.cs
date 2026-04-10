@@ -1,9 +1,10 @@
 using Fenestra.Core;
 using Fenestra.Core.Models;
-using Fenestra.Sample.BuilderStyle.Resources;
 using Fenestra.Windows;
+using Fenestra.Windows.Localization;
 using Fenestra.Windows.Models;
 using System.Globalization;
+using System.Resources;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -53,9 +54,24 @@ public partial class MainWindow : Window, IMinimizeToTray
         LifecycleInstallDateText.Text = $"First install: {_lifecycle.FirstInstallDate:yyyy-MM-dd HH:mm:ss zzz}";
         LifecycleLaunchCountText.Text = $"Launch count: {_lifecycle.LaunchCount}";
 
-        // Localization — initial render + subscribe to live changes.
+        // Localization — register the app's resource managers so {fenestra:Tr ...}
+        // bindings in XAML can resolve keys. Named so the same source can serve multiple
+        // .resx families (messages, errors, etc.).
+        TranslationSource.Instance.AddResourceManager(
+            "messages",
+            new ResourceManager("Fenestra.Sample.BuilderStyle.Resources.Messages", typeof(MainWindow).Assembly));
+        TranslationSource.Instance.AddResourceManager(
+            "errors",
+            new ResourceManager("Fenestra.Sample.BuilderStyle.Resources.Errors", typeof(MainWindow).Assembly));
+
+        // Bridge: when the localization service changes culture, tell the translation
+        // source to invalidate its bindings so WPF re-evaluates every {fenestra:Tr ...}.
+        _localization.CultureChanged += (_, _) =>
+        {
+            TranslationSource.Instance.Invalidate();
+            Dispatcher.Invoke(UpdateLocalizationDisplay);
+        };
         UpdateLocalizationDisplay();
-        _localization.CultureChanged += (_, _) => Dispatcher.Invoke(UpdateLocalizationDisplay);
 
         _tray.SetTooltip("Fenestra Sample");
         _tray.Click += (_, _) =>
@@ -225,17 +241,15 @@ public partial class MainWindow : Window, IMinimizeToTray
 
     private void UpdateLocalizationDisplay()
     {
+        // Static translated strings live in XAML via {fenestra:Tr messages, Key} and
+        // refresh automatically when the culture changes — no code needed here.
+        //
+        // Only the dynamic parts (culture name + formatted date/number) are set from
+        // code-behind, because they combine translated labels with runtime values.
         var c = _localization.CurrentCulture;
+        var languageLabel = TranslationSource.Instance["messages", "LanguageLabel"];
 
-        // These come from the .resx files (Strings.resx / Strings.pt-BR.resx / Strings.es-ES.resx)
-        // ResourceManager picks the right satellite assembly based on CurrentUICulture,
-        // which Fenestra's LocalizationService just updated via SetCulture.
-        LocGreetingText.Text = Strings.Greeting;
-        LocWelcomeText.Text = Strings.WelcomeMessage;
-        LocPromptText.Text = Strings.ChangeCulturePrompt;
-
-        // These come from CurrentCulture (date/number formatting, NOT translation).
-        LocCurrentText.Text = $"{Strings.LanguageLabel}: {c.Name} ({c.NativeName})";
+        LocCurrentText.Text = $"{languageLabel}: {c.Name} ({c.NativeName})";
         LocDateText.Text = $"Date: {DateTime.Now.ToString("D", c)}";
         LocNumberText.Text = $"Number: {1234567.89.ToString("N", c)}";
     }

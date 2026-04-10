@@ -1,103 +1,116 @@
 <Window x:Class="Fenestra.Sample.BuilderStyle.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fenestra="clr-namespace:Fenestra.Wpf.Localization;assembly=Fenestra.Windows.Wpf"
         Title="Builder Style Sample" Height="500" Width="600">
-    <StackPanel Margin="20" HorizontalAlignment="Center">
-        <TextBlock Text="Fenestra - Builder Style (Program.cs)"
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20" HorizontalAlignment="Center">
+            <TextBlock Text="Fenestra - Builder Style (Program.cs)"
                    HorizontalAlignment="Center"
                    FontSize="20" Margin="0,0,0,20" />
 
-        <!-- Tray Icon -->
-        <GroupBox Header="System Tray" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <Button Content="Show Tray Icon" Click="OnShowTray" Margin="0,0,0,5" />
-                <Button Content="Hide Tray Icon" Click="OnHideTray" Margin="0,0,0,5" />
-                <Button Content="Show Balloon Tip" Click="OnShowBalloon" />
-            </StackPanel>
-        </GroupBox>
+            <!-- Tray Icon -->
+            <GroupBox Header="System Tray" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <Button Content="Show Tray Icon" Click="OnShowTray" Margin="0,0,0,5" />
+                    <Button Content="Hide Tray Icon" Click="OnHideTray" Margin="0,0,0,5" />
+                    <Button Content="Show Balloon Tip" Click="OnShowBalloon" />
+                </StackPanel>
+            </GroupBox>
 
-        <!-- Taskbar Progress -->
-        <GroupBox Header="Taskbar Progress" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <Slider x:Name="ProgressSlider" Minimum="0" Maximum="100" Value="0"
+            <!-- Taskbar Progress -->
+            <GroupBox Header="Taskbar Progress" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <Slider x:Name="ProgressSlider" Minimum="0" Maximum="100" Value="0"
                         ValueChanged="OnProgressChanged" Margin="0,0,0,5" />
-                <WrapPanel HorizontalAlignment="Center">
-                    <Button Content="Normal" Click="OnProgressNormal" Margin="0,0,5,0" />
-                    <Button Content="Paused" Click="OnProgressPaused" Margin="0,0,5,0" />
-                    <Button Content="Error" Click="OnProgressError" Margin="0,0,5,0" />
-                    <Button Content="Indeterminate" Click="OnProgressIndeterminate" Margin="0,0,5,0" />
-                    <Button Content="Clear" Click="OnProgressClear" />
-                </WrapPanel>
-            </StackPanel>
-        </GroupBox>
+                    <WrapPanel HorizontalAlignment="Center">
+                        <Button Content="Normal" Click="OnProgressNormal" Margin="0,0,5,0" />
+                        <Button Content="Paused" Click="OnProgressPaused" Margin="0,0,5,0" />
+                        <Button Content="Error" Click="OnProgressError" Margin="0,0,5,0" />
+                        <Button Content="Indeterminate" Click="OnProgressIndeterminate" Margin="0,0,5,0" />
+                        <Button Content="Clear" Click="OnProgressClear" />
+                    </WrapPanel>
+                </StackPanel>
+            </GroupBox>
 
-        <!-- Dialogs -->
-        <GroupBox Header="Dialogs" Margin="0,0,0,10">
-            <WrapPanel Margin="10" HorizontalAlignment="Center">
-                <Button Content="Open File" Click="OnOpenFile" Margin="0,0,5,5" />
-                <Button Content="Save File" Click="OnSaveFile" Margin="0,0,5,5" />
-                <Button Content="Open Folder" Click="OnOpenFolder" Margin="0,0,5,5" />
-                <Button Content="Message" Click="OnShowMessage" Margin="0,0,5,5" />
-            </WrapPanel>
-        </GroupBox>
-
-        <!-- Credential Vault -->
-        <GroupBox Header="Credential Vault" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,5">
-                    <Button Content="Store (string)" Click="OnCredStoreString" Margin="0,0,5,0" />
-                    <Button Content="Read (string)" Click="OnCredReadString" Margin="0,0,5,0" />
-                    <Button Content="Store (bytes)" Click="OnCredStoreBytes" Margin="0,0,5,0" />
-                    <Button Content="Read (bytes)" Click="OnCredReadBytes" Margin="0,0,5,0" />
-                    <Button Content="List" Click="OnCredList" Margin="0,0,5,0" />
-                    <Button Content="Delete All" Click="OnCredDeleteAll" />
+            <!-- Dialogs -->
+            <GroupBox Header="Dialogs" Margin="0,0,0,10">
+                <WrapPanel Margin="10" HorizontalAlignment="Center">
+                    <Button Content="Open File" Click="OnOpenFile" Margin="0,0,5,5" />
+                    <Button Content="Save File" Click="OnSaveFile" Margin="0,0,5,5" />
+                    <Button Content="Open Folder" Click="OnOpenFolder" Margin="0,0,5,5" />
+                    <Button Content="Message" Click="OnShowMessage" Margin="0,0,5,5" />
                 </WrapPanel>
-                <TextBlock Text="Open Control Panel → Credential Manager → Windows Credentials to see entries prefixed with the app id."
+            </GroupBox>
+
+            <!-- Credential Vault -->
+            <GroupBox Header="Credential Vault" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,5">
+                        <Button Content="Store (string)" Click="OnCredStoreString" Margin="0,0,5,0" />
+                        <Button Content="Read (string)" Click="OnCredReadString" Margin="0,0,5,0" />
+                        <Button Content="Store (bytes)" Click="OnCredStoreBytes" Margin="0,0,5,0" />
+                        <Button Content="Read (bytes)" Click="OnCredReadBytes" Margin="0,0,5,0" />
+                        <Button Content="List" Click="OnCredList" Margin="0,0,5,0" />
+                        <Button Content="Delete All" Click="OnCredDeleteAll" />
+                    </WrapPanel>
+                    <TextBlock Text="Open Control Panel → Credential Manager → Windows Credentials to see entries prefixed with the app id."
                            TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" />
-            </StackPanel>
-        </GroupBox>
+                </StackPanel>
+            </GroupBox>
 
-        <!-- Idle Detection -->
-        <GroupBox Header="Idle Detection" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <TextBlock x:Name="IdleStatusText" Text="Status: active" FontWeight="Bold" HorizontalAlignment="Center" />
-                <TextBlock x:Name="IdleTimeText" Text="Idle time: 0s" HorizontalAlignment="Center" Foreground="Gray" />
-                <TextBlock Text="Threshold: 10s. Stop touching mouse/keyboard for 10s to see the status flip."
+            <!-- Idle Detection -->
+            <GroupBox Header="Idle Detection" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <TextBlock x:Name="IdleStatusText" Text="Status: active" FontWeight="Bold" HorizontalAlignment="Center" />
+                    <TextBlock x:Name="IdleTimeText" Text="Idle time: 0s" HorizontalAlignment="Center" Foreground="Gray" />
+                    <TextBlock Text="Threshold: 10s. Stop touching mouse/keyboard for 10s to see the status flip."
                            TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,5,0,0" />
-            </StackPanel>
-        </GroupBox>
+                </StackPanel>
+            </GroupBox>
 
-        <!-- App Lifecycle -->
-        <GroupBox Header="App Lifecycle" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <TextBlock x:Name="LifecycleFirstRunText" />
-                <TextBlock x:Name="LifecycleVersionText" />
-                <TextBlock x:Name="LifecyclePrevVersionText" />
-                <TextBlock x:Name="LifecycleInstallDateText" />
-                <TextBlock x:Name="LifecycleLaunchCountText" />
-                <TextBlock Text="Close and reopen to see LaunchCount increment. Delete HKCU\SOFTWARE\Fenestra.Sample.BuilderStyle\Lifecycle to reset."
+            <!-- App Lifecycle -->
+            <GroupBox Header="App Lifecycle" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <TextBlock x:Name="LifecycleFirstRunText" />
+                    <TextBlock x:Name="LifecycleVersionText" />
+                    <TextBlock x:Name="LifecyclePrevVersionText" />
+                    <TextBlock x:Name="LifecycleInstallDateText" />
+                    <TextBlock x:Name="LifecycleLaunchCountText" />
+                    <TextBlock Text="Close and reopen to see LaunchCount increment. Delete HKCU\SOFTWARE\Fenestra.Sample.BuilderStyle\Lifecycle to reset."
                            TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,5,0,0" />
-            </StackPanel>
-        </GroupBox>
+                </StackPanel>
+            </GroupBox>
 
-        <!-- Localization -->
-        <GroupBox Header="Localization" Margin="0,0,0,10">
-            <StackPanel Margin="10">
-                <TextBlock x:Name="LocGreetingText" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,5" />
-                <TextBlock x:Name="LocWelcomeText" HorizontalAlignment="Center" Margin="0,0,0,5" />
-                <TextBlock x:Name="LocCurrentText" HorizontalAlignment="Center" Foreground="Gray" />
-                <TextBlock x:Name="LocDateText" HorizontalAlignment="Center" Foreground="Gray" />
-                <TextBlock x:Name="LocNumberText" HorizontalAlignment="Center" Foreground="Gray" />
-                <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">
-                    <Button Content="en-US" Click="OnSetEnUs" Margin="0,0,5,0" />
-                    <Button Content="pt-BR" Click="OnSetPtBr" Margin="0,0,5,0" />
-                    <Button Content="es-ES" Click="OnSetEsEs" />
-                </WrapPanel>
-                <TextBlock x:Name="LocPromptText"
+            <!-- Localization — strings come from .resx via {fenestra:Tr resource, key}.
+             Bindings auto-refresh when TranslationSource.Instance.Invalidate() is called. -->
+            <GroupBox Header="Localization" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <TextBlock Text="{fenestra:Tr messages, Greeting}"
+                           FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,5" />
+                    <TextBlock Text="{fenestra:Tr messages, WelcomeMessage}"
+                           HorizontalAlignment="Center" Margin="0,0,0,5" />
+
+                    <!-- Demonstrates a second resource family (errors.resx) -->
+                    <TextBlock Text="{fenestra:Tr errors, NotFound}"
+                           HorizontalAlignment="Center" Foreground="IndianRed" FontSize="11" />
+
+                    <!-- Dynamic labels (culture name, date, number) — set from code-behind -->
+                    <TextBlock x:Name="LocCurrentText" HorizontalAlignment="Center" Foreground="Gray" Margin="0,5,0,0" />
+                    <TextBlock x:Name="LocDateText" HorizontalAlignment="Center" Foreground="Gray" />
+                    <TextBlock x:Name="LocNumberText" HorizontalAlignment="Center" Foreground="Gray" />
+
+                    <WrapPanel HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <Button Content="en-US" Click="OnSetEnUs" Margin="0,0,5,0" />
+                        <Button Content="pt-BR" Click="OnSetPtBr" Margin="0,0,5,0" />
+                        <Button Content="es-ES" Click="OnSetEsEs" />
+                    </WrapPanel>
+                    <TextBlock Text="{fenestra:Tr messages, ChangeCulturePrompt}"
                            TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,5,0,0" />
-            </StackPanel>
-        </GroupBox>
+                </StackPanel>
+            </GroupBox>
 
-        <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="Gray" />
-    </StackPanel>
+            <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,10,0,0" Foreground="Gray" />
+        </StackPanel>
+    </ScrollViewer>
 </Window>
