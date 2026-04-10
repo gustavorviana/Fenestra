@@ -1,8 +1,8 @@
 # Fenestra
 
-Fenestra is a WPF application framework that provides a structured hosting model with dependency injection, system tray integration, toast notifications, registry configuration, window state persistence, global hotkeys, theme detection, auto-start, single-instance enforcement, and more.
+Fenestra is a Windows application framework that provides a structured hosting model with dependency injection, system tray integration, toast notifications, registry configuration, window state persistence, global hotkeys, theme detection, auto-start, single-instance enforcement, and more. It includes integration support for WPF.
 
-Built on top of `Microsoft.Extensions.Hosting`, Fenestra eliminates the boilerplate of wiring up a modern WPF application while keeping full control over the DI container, logging, and configuration.
+Built on top of `Microsoft.Extensions.Hosting`, Fenestra eliminates the boilerplate of wiring up a modern Windows desktop application while keeping full control over the DI container, logging, and configuration.
 
 ## Table of Contents
 
@@ -83,7 +83,7 @@ public partial class MainWindow : Window, IRememberWindowState, IMinimizeToTray
 }
 ```
 
-`IRememberWindowState` persists the window's position and size across sessions. `IMinimizeToTray` makes the window minimize to the system tray instead of closing (requires `UseWindowsMinimizeToTray()` in the builder).
+`IRememberWindowState` persists the window's position and size across sessions. `IMinimizeToTray` makes the window minimize to the system tray instead of closing (requires `AddWpfMinimizeToTray()` on `builder.Services`).
 
 **Step 3 -- Configure App.xaml**
 
@@ -114,9 +114,9 @@ namespace MyApp;
 
 public partial class App : FenestraApp
 {
-    protected override void Configure(FenestraBuilder builder)
+    protected override void Configure(WpfFenestraBuilder builder)
     {
-        builder.UseWindowsMinimizeToTray();
+        builder.Services.AddWpfMinimizeToTray();
         builder.RegisterWindows();
     }
 
@@ -215,10 +215,11 @@ public partial class MainWindow : Window, IMinimizeToTray
 // Program.cs
 using MyApp;
 using Fenestra.Wpf;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = FenestraApplication.CreateBuilder(args);
 builder.UseMainWindow<MainWindow>();
-builder.UseWindowsMinimizeToTray();
+builder.Services.AddWpfMinimizeToTray();
 builder.RegisterWindows();
 
 var app = builder.Build();
@@ -251,27 +252,27 @@ Fenestra is modular. Each feature is opt-in via the `FenestraBuilder`:
 
 | Feature | Builder Method | Documentation |
 |---|---|---|
-| App Info (name, version, GUID) | Automatic | [App Info](./app-info.md) |
-| Registry Configuration | Automatic | [Registry Config](./registry-config.md) |
-| Toast Notifications | `UseWindowsToastNotifications()` | [Toast Notifications](./toast-notifications.md) |
-| Toast Background Activation | `UseWindowsToastActivation()` | [Toast Activation](./toast-activation.md) |
-| Window State Persistence | Implement `IRememberWindowState` | [Window Management](./window-management.md) |
-| Dialog Service | Automatic | [Dialog Service](./dialog-service.md) |
-| System Tray Icon | `UseWindowsTrayIcon()` | [Tray Icon](./tray-icon.md) |
-| Minimize to Tray | `UseWindowsMinimizeToTray()` | [Tray Icon](./tray-icon.md) |
-| Single Instance | `UseWindowsSingleInstance()` | [Single Instance](./single-instance.md) |
-| Auto-Start (Windows startup) | `UseWindowsAutoStart()` | [Auto-Start](./auto-start.md) |
-| Global Hotkeys | `UseWindowsGlobalHotkeys()` | [Global Hotkeys](./global-hotkeys.md) |
-| Theme Detection (dark/light) | `UseWindowsThemeDetection()` | [Theme Detection](./theme-detection.md) |
-| Credential Vault (DPAPI) | `AddWindowsCredentialVault()` | [Credential Vault](./docs/credential-vault.md) |
-| Idle Detection | `AddWindowsIdleDetection()` | [Idle Detection](./docs/idle-detection.md) |
-| App Lifecycle (first run, upgrade, launch count) | `AddWindowsAppLifecycle()` | [App Lifecycle](./docs/app-lifecycle.md) |
-| Localization (persist + switch culture) | `AddWindowsLocalization()` | [Localization](./docs/localization.md) |
-| Event Bus | Automatic | [Event Bus](./event-bus.md) |
-| Taskbar Progress | Automatic | [Taskbar Progress](./taskbar-progress.md) |
-| Platform Detection | Static class | [Platform](./platform.md) |
-| Exception Handling | Automatic (customizable) | [Exception Handling](./exception-handling.md) |
-| Window Manager | Automatic | [Window Management](./window-management.md) |
+| App Info (name, version, GUID) | Automatic | [App Info](https://github.com/gustavorviana/Fenestra/wiki/App-Info) |
+| Registry Configuration | Automatic | [Registry Config](https://github.com/gustavorviana/Fenestra/wiki/Registry-Config) |
+| Toast Notifications | `AddWindowsToastNotifications()` | [Toast Notifications](https://github.com/gustavorviana/Fenestra/wiki/Toast-Notifications) |
+| Toast Background Activation | `AddWindowsToastActivation()` | [Toast Activation](https://github.com/gustavorviana/Fenestra/wiki/Toast-Activation) |
+| Window State Persistence | Implement `IRememberWindowState` | [Window Management](https://github.com/gustavorviana/Fenestra/wiki/Window-Management) |
+| Dialog Service | Automatic | [Dialog Service](https://github.com/gustavorviana/Fenestra/wiki/Dialog-Service) |
+| System Tray Icon | `AddWpfTrayIcon()` | [Tray Icon](https://github.com/gustavorviana/Fenestra/wiki/Tray-Icon) |
+| Minimize to Tray | `AddWpfMinimizeToTray()` | [Tray Icon](https://github.com/gustavorviana/Fenestra/wiki/Tray-Icon) |
+| Single Instance | `AddWpfSingleInstance()` | [Single Instance](https://github.com/gustavorviana/Fenestra/wiki/Single-Instance) |
+| Auto-Start (Windows startup) | `AddWindowsAutoStart()` | [Auto-Start](https://github.com/gustavorviana/Fenestra/wiki/Auto-Start) |
+| Global Hotkeys | `AddWpfGlobalHotkeys()` | [Global Hotkeys](https://github.com/gustavorviana/Fenestra/wiki/Global-Hotkeys) |
+| Theme Detection (dark/light) | `AddWindowsThemeDetection()` | [Theme Detection](https://github.com/gustavorviana/Fenestra/wiki/Theme-Detection) |
+| Credential Vault (DPAPI) | `AddWindowsCredentialVault()` | [Credential Vault](https://github.com/gustavorviana/Fenestra/wiki/Credential-Vault) |
+| Idle Detection | `AddWindowsIdleDetection()` | [Idle Detection](https://github.com/gustavorviana/Fenestra/wiki/Idle-Detection) |
+| App Lifecycle (first run, upgrade, launch count) | `AddWindowsAppLifecycle()` | [App Lifecycle](https://github.com/gustavorviana/Fenestra/wiki/App-Lifecycle) |
+| Localization (persist + switch culture) | `AddWindowsLocalization()` | [Localization](https://github.com/gustavorviana/Fenestra/wiki/Localization) |
+| Event Bus | Automatic | [Event Bus](https://github.com/gustavorviana/Fenestra/wiki/Event-Bus) |
+| Taskbar Progress | Automatic | [Taskbar Progress](https://github.com/gustavorviana/Fenestra/wiki/Taskbar-Progress) |
+| Platform Detection | Static class | [Platform](https://github.com/gustavorviana/Fenestra/wiki/Platform) |
+| Exception Handling | Automatic (customizable) | [Exception Handling](https://github.com/gustavorviana/Fenestra/wiki/Exception-Handling) |
+| Window Manager | Automatic | [Window Management](https://github.com/gustavorviana/Fenestra/wiki/Window-Management) |
 | Logging | `ConfigureLogging()` | Standard `Microsoft.Extensions.Logging` |
 | Configuration | `Configuration` property | Standard `Microsoft.Extensions.Configuration` |
 
@@ -289,13 +290,13 @@ These services are always registered in the DI container, with no explicit opt-i
 
 ### Services Requiring Opt-In
 
-These require a `Use*()` call on the builder:
+These require an `Add*()` call on `builder.Services`:
 
-- `ITrayIconService` -- via `UseWindowsTrayIcon()` or `UseWindowsMinimizeToTray()`
-- `IToastService` -- via `UseWindowsToastNotifications()`
-- `IGlobalHotkeyService` -- via `UseWindowsGlobalHotkeys()`
-- `IAutoStartService` -- via `UseWindowsAutoStart()`
-- `IThemeService` -- via `UseWindowsThemeDetection()`
+- `ITrayIconService` -- via `AddWpfTrayIcon()` or `AddWpfMinimizeToTray()`
+- `IToastService` -- via `AddWindowsToastNotifications()`
+- `IGlobalHotkeyService` -- via `AddWpfGlobalHotkeys()`
+- `IAutoStartService` -- via `AddWindowsAutoStart()`
+- `IThemeService` -- via `AddWindowsThemeDetection()`
 - `ICredentialVault` -- via `AddWindowsCredentialVault()`
 - `IIdleDetectionService` -- via `AddWindowsIdleDetection()`
 - `IAppLifecycleService` -- via `AddWindowsAppLifecycle()`
