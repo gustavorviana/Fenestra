@@ -119,12 +119,32 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         }
 
         RegisterExceptionHandlers();
+
         StartAsync().GetAwaiter().GetResult();
 
         singleInstance?.StartListening();
 
         var toastActivation = Services.GetService(typeof(Windows.IToastActivationRegistrar)) as Windows.IToastActivationRegistrar;
         toastActivation?.Register();
+
+        // Splash runs its full lifecycle (show → load → close) before any other window is
+        // resolved, so nothing else can open while the splash is on screen. The splash owns
+        // the loading logic (via ISplashScreen.RunAsync) and signals completion by returning
+        // from RunToCompletion — only then do we proceed to the main window. If the user
+        // cancels the splash (via the close button), RunToCompletion throws OCE and we tear
+        // the host down without ever showing the main window.
+        var splashCoordinator = Services.GetService<Services.WpfSplashCoordinator>();
+        try
+        {
+            splashCoordinator?.RunToCompletion(_cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _cts.Cancel();
+            StopAsync().GetAwaiter().GetResult();
+            Shutdown(0);
+            return;
+        }
 
         var mainWindow = ResolveMainWindow();
         if (mainWindow is null)

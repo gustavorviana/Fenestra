@@ -25,6 +25,9 @@ public class WpfFenestraBuilder : WindowsFenestraBuilder
     /// <summary>The main window type.</summary>
     internal Type? ShellType { get; set; }
 
+    /// <summary>Splash screen configuration</summary>
+    private Type? _splashScreenType = null;
+
     public WpfFenestraBuilder()
     {
         Services.AddSingleton<IWindowManager, WindowManager>();
@@ -93,6 +96,14 @@ public class WpfFenestraBuilder : WindowsFenestraBuilder
         return base.ResolveAppInfo();
     }
 
+    public WpfFenestraBuilder UseSplashScreen<TSplash>() where TSplash : class, ISplashScreen
+    {
+        _splashScreenType = typeof(TSplash);
+        Services.AddTransient<TSplash>();
+        Services.AddTransient<ISplashScreen>(sp => sp.GetRequiredService<TSplash>());
+        return this;
+    }
+
     protected override void ConfigureHostServices(IServiceCollection services, AppInfo appInfo)
     {
         base.ConfigureHostServices(services, appInfo);
@@ -105,6 +116,12 @@ public class WpfFenestraBuilder : WindowsFenestraBuilder
         services.AddSingleton<IThreadContext, WpfThreadContext>();
         services.AddSingleton<ITaskbarProvider, TaskbarProvider>();
         services.AddSingleton<IWpfApplication>(_ => _wpfAppInstance!);
+
+        if (_splashScreenType != null)
+        {
+            services.AddSingleton(sp => new WpfSplashCoordinator(_splashScreenType, sp));
+            services.AddSingleton<IProgress<SplashStatus>>(sp => sp.GetRequiredService<WpfSplashCoordinator>());
+        }
 
         if (ShellType != null)
             services.AddTransient(ShellType);
