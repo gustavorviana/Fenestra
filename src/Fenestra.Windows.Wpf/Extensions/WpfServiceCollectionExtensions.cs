@@ -52,4 +52,5 @@ public static class WpfServiceCollectionExtensions
         services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
         return services;
     }
+
 }

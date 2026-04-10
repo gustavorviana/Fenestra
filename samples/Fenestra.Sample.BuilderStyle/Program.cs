@@ -10,6 +10,8 @@ builder.Services.AddWpfMinimizeToTray();
 builder.Services.AddWindowsCredentialVault();
 builder.Services.AddWindowsIdleDetection(opts => opts.Threshold = TimeSpan.FromSeconds(10));
 builder.Services.AddWindowsAppLifecycle();
+builder.Services.AddWindowsJumpList();
+builder.Services.AddWindowsTaskbarOverlay();
 builder.Services.AddWindowsLocalization(opts =>
 {
     opts.Supported = new[] { "en-US", "pt-BR", "es-ES" };

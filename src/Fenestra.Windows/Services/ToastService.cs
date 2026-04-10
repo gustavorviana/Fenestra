@@ -36,7 +36,7 @@ internal class ToastService : IToastService, IDisposable
         IThreadContext threadContext,
         IWinRtInterop? interop = null,
         IApplicationActivator? activator = null,
-        IWindowsNotificationRegistrationManager? registrationManager = null,
+        IAumidRegistrationManager? registrationManager = null,
         INativeToastNotifierFactory? notifierFactory = null,
         IXmlToastFactory? xmlToastFactory = null)
     {

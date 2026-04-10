@@ -3,9 +3,11 @@ using Fenestra.Core.Models;
 using Fenestra.Windows;
 using Fenestra.Windows.Localization;
 using Fenestra.Windows.Models;
+using Fenestra.Wpf;
 using System.Globalization;
 using System.Resources;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Fenestra.Sample.BuilderStyle;
@@ -19,6 +21,8 @@ public partial class MainWindow : Window, IMinimizeToTray
     private readonly IIdleDetectionService _idle;
     private readonly IAppLifecycleService _lifecycle;
     private readonly ILocalizationService _localization;
+    private readonly IJumpListService _jumpList;
+    private readonly ITaskbarOverlayService _overlay;
     private readonly DispatcherTimer _idleUiTimer;
     private ITaskbarProgress? _progress;
 
@@ -29,7 +33,9 @@ public partial class MainWindow : Window, IMinimizeToTray
         ICredentialVault vault,
         IIdleDetectionService idle,
         IAppLifecycleService lifecycle,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IJumpListService jumpList,
+        ITaskbarOverlayService overlay)
     {
         InitializeComponent();
         _dialogs = dialogs;
@@ -39,6 +45,8 @@ public partial class MainWindow : Window, IMinimizeToTray
         _idle = idle;
         _lifecycle = lifecycle;
         _localization = localization;
+        _jumpList = jumpList;
+        _overlay = overlay;
 
         // Idle detection — wire events and a local timer to refresh the "Idle time" text.
         _idle.BecameIdle += (_, _) => IdleStatusText.Text = "Status: IDLE (no input for 10s)";
@@ -262,4 +270,60 @@ public partial class MainWindow : Window, IMinimizeToTray
 
     private void OnSetEsEs(object sender, RoutedEventArgs e)
         => _localization.SetCulture(CultureInfo.GetCultureInfo("es-ES"));
+
+    // --- Jump List ---
+
+    private void OnJumpSetTasks(object sender, RoutedEventArgs e)
+    {
+        // User tasks always appear at the bottom of the Jump List under "Tasks".
+        // ApplicationPath is auto-filled with the current .exe when left null.
+        _jumpList.SetTasks(
+            new JumpListTask
+            {
+                Title = "New Window",
+                Description = "Open a fresh instance with no state",
+                Arguments = "--new-window",
+            },
+            new JumpListTask
+            {
+                Title = "Show Help",
+                Description = "Open the Fenestra docs",
+                Arguments = "--help",
+            });
+        StatusText.Text = "Tasks buffered. Click 'Apply' to commit.";
+    }
+
+    private void OnJumpApply(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            _jumpList.Apply();
+            StatusText.Text = "Jump List applied. Right-click the taskbar icon to see it.";
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = $"Jump List apply failed: {ex.Message}";
+        }
+    }
+
+    // --- Taskbar Overlay ---
+
+    private void OnOverlayBadge3(object sender, RoutedEventArgs e)
+    {
+        // SetBadgeOverlay is a WPF extension that renders a circular badge in code — no .ico needed.
+        _overlay.SetBadgeOverlay("3", Colors.Crimson, Colors.White, "3 unread items");
+        StatusText.Text = "Overlay set: red badge '3'. Check the taskbar icon.";
+    }
+
+    private void OnOverlayWarning(object sender, RoutedEventArgs e)
+    {
+        _overlay.SetBadgeOverlay("!", Colors.Goldenrod, Colors.Black, "Warning");
+        StatusText.Text = "Overlay set: yellow warning '!'.";
+    }
+
+    private void OnOverlayClear(object sender, RoutedEventArgs e)
+    {
+        _overlay.Clear();
+        StatusText.Text = "Taskbar overlay cleared.";
+    }
 }

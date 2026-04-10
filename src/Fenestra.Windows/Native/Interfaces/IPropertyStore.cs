@@ -1,4 +1,4 @@
-﻿using Fenestra.Windows.Native.Structs;
+using Fenestra.Windows.Native.Structs;
 using System.Runtime.InteropServices;
 
 namespace Fenestra.Windows.Native.Interfaces;
@@ -8,9 +8,9 @@ namespace Fenestra.Windows.Native.Interfaces;
 [Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99")]
 internal interface IPropertyStore
 {
-    uint GetCount(out uint cProps);
-    uint GetAt(uint iProp, out PROPERTYKEY pkey);
-    uint GetValue(ref PROPERTYKEY key, out PROPVARIANT pv);
-    uint SetValue(ref PROPERTYKEY key, [In] PROPVARIANT propvar);
-    uint Commit();
+    [PreserveSig] int GetCount(out uint cProps);
+    [PreserveSig] int GetAt(uint iProp, out PROPERTYKEY pkey);
+    [PreserveSig] int GetValue(ref PROPERTYKEY key, out PROPVARIANT pv);
+    [PreserveSig] int SetValue(ref PROPERTYKEY key, [In] PROPVARIANT propvar);
+    [PreserveSig] int Commit();
 }

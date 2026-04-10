@@ -1,5 +1,6 @@
 using Fenestra.Windows.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Fenestra.Windows;
 
@@ -16,8 +17,35 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddWindowsToastNotifications(this IServiceCollection services)
     {
-        services.AddSingleton<IWindowsNotificationRegistrationManager, WindowsNotificationRegistrationManager>();
+        services.TryAddSingleton<IAumidRegistrationManager, AumidRegistrationManager>();
         services.AddSingleton<IToastService, ToastService>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the Jump List service (<see cref="IJumpListService"/>) for customizing
+    /// the taskbar icon's right-click menu with custom tasks and recent files. Backed
+    /// directly by the Win32 <c>ICustomDestinationList</c> COM API — no WPF dependency.
+    /// Transitively registers <see cref="IAumidRegistrationManager"/> which Jump Lists
+    /// need for the AUMID + Start Menu shortcut prerequisites. Windows only.
+    /// </summary>
+    public static IServiceCollection AddWindowsJumpList(this IServiceCollection services)
+    {
+        services.TryAddSingleton<IAumidRegistrationManager, AumidRegistrationManager>();
+        services.AddSingleton<IJumpListService, JumpListService>();
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the taskbar overlay icon service (<see cref="ITaskbarOverlayService"/>)
+    /// for displaying a small badge icon on the application's taskbar button. Backed by
+    /// <c>ITaskbarList3::SetOverlayIcon</c>. Framework-agnostic — works from any host.
+    /// For WPF <c>ImageSource</c> inputs, add <c>using Fenestra.Wpf;</c> to bring in the
+    /// WPF bridge extension. Windows 7+.
+    /// </summary>
+    public static IServiceCollection AddWindowsTaskbarOverlay(this IServiceCollection services)
+    {
+        services.AddSingleton<ITaskbarOverlayService, TaskbarOverlayService>();
         return services;
     }
 

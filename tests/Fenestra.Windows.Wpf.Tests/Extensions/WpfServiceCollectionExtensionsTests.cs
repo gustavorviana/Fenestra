@@ -1,4 +1,5 @@
 using Fenestra.Windows;
+using Fenestra.Wpf;
 using Fenestra.Wpf.Services;
 using Microsoft.Extensions.DependencyInjection;
 

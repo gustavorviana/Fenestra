@@ -91,4 +91,32 @@ internal static class ShellNativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern IntPtr CreateIconFromResourceEx(
         byte[] presbits, int dwResSize, bool fIcon, int dwVer, int cxDesired, int cyDesired, int flags);
+
+    // ── OLE / COM ───────────────────────────────────────────────────────
+    internal const uint CLSCTX_INPROC_SERVER = 0x1;
+
+    [DllImport("ole32.dll")]
+    internal static extern int CoCreateInstance(
+        [In] ref Guid rclsid,
+        IntPtr pUnkOuter,
+        uint dwClsContext,
+        [In] ref Guid riid,
+        [MarshalAs(UnmanagedType.Interface)] out object ppv);
+
+    [DllImport("ole32.dll")]
+    internal static extern int PropVariantClear(IntPtr pvar);
+
+    // ── LoadImage (for loading .ico files as HICON) ─────────────────────
+    internal const uint IMAGE_ICON = 1;
+    internal const uint LR_LOADFROMFILE = 0x00000010;
+    internal const uint LR_DEFAULTSIZE = 0x00000040;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    internal static extern IntPtr LoadImage(
+        IntPtr hInst,
+        string lpszName,
+        uint uType,
+        int cxDesired,
+        int cyDesired,
+        uint fuLoad);
 }

@@ -29,7 +29,7 @@ public class ServiceCollectionExtensionsTests
         services.AddWindowsToastNotifications();
 
         Assert.Contains(services, d =>
-            d.ServiceType == typeof(IWindowsNotificationRegistrationManager) &&
+            d.ServiceType == typeof(IAumidRegistrationManager) &&
             d.Lifetime == ServiceLifetime.Singleton);
     }
 
@@ -39,6 +39,66 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
 
         var result = services.AddWindowsToastNotifications();
+
+        Assert.Same(services, result);
+    }
+
+    // --- AddWindowsJumpList ---
+
+    [Fact]
+    public void AddWindowsJumpList_RegistersJumpListService()
+    {
+        var services = new ServiceCollection();
+
+        services.AddWindowsJumpList();
+
+        Assert.Contains(services, d =>
+            d.ServiceType == typeof(IJumpListService) &&
+            d.ImplementationType == typeof(JumpListService) &&
+            d.Lifetime == ServiceLifetime.Singleton);
+    }
+
+    [Fact]
+    public void AddWindowsJumpList_TransitivelyRegistersAumidRegistrationManager()
+    {
+        var services = new ServiceCollection();
+
+        services.AddWindowsJumpList();
+
+        Assert.Contains(services, d => d.ServiceType == typeof(IAumidRegistrationManager));
+    }
+
+    [Fact]
+    public void AddWindowsJumpList_ReturnsServiceCollection()
+    {
+        var services = new ServiceCollection();
+
+        var result = services.AddWindowsJumpList();
+
+        Assert.Same(services, result);
+    }
+
+    // --- AddWindowsTaskbarOverlay ---
+
+    [Fact]
+    public void AddWindowsTaskbarOverlay_RegistersTaskbarOverlayService()
+    {
+        var services = new ServiceCollection();
+
+        services.AddWindowsTaskbarOverlay();
+
+        Assert.Contains(services, d =>
+            d.ServiceType == typeof(ITaskbarOverlayService) &&
+            d.ImplementationType == typeof(TaskbarOverlayService) &&
+            d.Lifetime == ServiceLifetime.Singleton);
+    }
+
+    [Fact]
+    public void AddWindowsTaskbarOverlay_ReturnsServiceCollection()
+    {
+        var services = new ServiceCollection();
+
+        var result = services.AddWindowsTaskbarOverlay();
 
         Assert.Same(services, result);
     }

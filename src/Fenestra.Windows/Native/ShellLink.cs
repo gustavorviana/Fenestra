@@ -224,9 +224,9 @@ internal sealed class ShellLink : IDisposable
         return new ComRef<IShellLinkW>((IShellLinkW)instance);
     }
 
-    private static void ThrowIfFailed(uint hr)
+    private static void ThrowIfFailed(int hr)
     {
-        if (hr != 0) Marshal.ThrowExceptionForHR(unchecked((int)hr));
+        if (hr < 0) Marshal.ThrowExceptionForHR(hr);
     }
 
     [DllImport("ole32.dll")]

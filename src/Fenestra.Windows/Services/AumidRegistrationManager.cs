@@ -4,12 +4,13 @@ using System.Text;
 
 namespace Fenestra.Windows.Services;
 
-public sealed class WindowsNotificationRegistrationManager : IWindowsNotificationRegistrationManager
+/// <inheritdoc cref="IAumidRegistrationManager"/>
+public sealed class AumidRegistrationManager : IAumidRegistrationManager
 {
     private readonly AppInfo _info;
     private readonly AppShortcutManager _shortcut;
 
-    public WindowsNotificationRegistrationManager(AppInfo info)
+    public AumidRegistrationManager(AppInfo info)
     {
         _info = info ?? throw new ArgumentNullException(nameof(info));
         _shortcut = new AppShortcutManager(info);

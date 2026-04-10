@@ -82,6 +82,31 @@
                 </StackPanel>
             </GroupBox>
 
+            <!-- Jump List — right-click the taskbar icon to see Tasks after Apply. -->
+            <GroupBox Header="Jump List" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <WrapPanel HorizontalAlignment="Center" Margin="0,0,0,5">
+                        <Button Content="Set Tasks" Click="OnJumpSetTasks" Margin="0,0,5,0" />
+                        <Button Content="Apply" Click="OnJumpApply" />
+                    </WrapPanel>
+                    <TextBlock Text="Click Set Tasks, then Apply. Right-click the app's taskbar icon to see the Jump List. The first Apply creates a Start Menu shortcut with the matching AUMID."
+                           TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" />
+                </StackPanel>
+            </GroupBox>
+
+            <!-- Taskbar Overlay — small badge rendered on the taskbar icon (bottom-right). -->
+            <GroupBox Header="Taskbar Overlay" Margin="0,0,0,10">
+                <StackPanel Margin="10">
+                    <WrapPanel HorizontalAlignment="Center">
+                        <Button Content="Badge '3' (red)" Click="OnOverlayBadge3" Margin="0,0,5,0" />
+                        <Button Content="Badge '!' (yellow)" Click="OnOverlayWarning" Margin="0,0,5,0" />
+                        <Button Content="Clear Overlay" Click="OnOverlayClear" />
+                    </WrapPanel>
+                    <TextBlock Text="The overlay appears at the bottom-right of the app's taskbar icon. Max useful size is ~16x16."
+                           TextWrapping="Wrap" FontStyle="Italic" Foreground="Gray" FontSize="11" Margin="0,5,0,0" />
+                </StackPanel>
+            </GroupBox>
+
             <!-- Localization — strings come from .resx via {fenestra:Tr resource, key}.
              Bindings auto-refresh when TranslationSource.Instance.Invalidate() is called. -->
             <GroupBox Header="Localization" Margin="0,0,0,10">

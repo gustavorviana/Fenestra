@@ -16,7 +16,7 @@ public class ToastServiceTests
     private readonly IThreadContext _threadContext = Substitute.For<IThreadContext>();
     private readonly IWinRtInterop _interop = Substitute.For<IWinRtInterop>();
     private readonly IApplicationActivator _activator = Substitute.For<IApplicationActivator>();
-    private readonly IWindowsNotificationRegistrationManager _regManager = Substitute.For<IWindowsNotificationRegistrationManager>();
+    private readonly IAumidRegistrationManager _regManager = Substitute.For<IAumidRegistrationManager>();
     private readonly INativeToastNotifier _notifier = Substitute.For<INativeToastNotifier>();
     private readonly INativeToastNotifierFactory _notifierFactory = Substitute.For<INativeToastNotifierFactory>();
     private readonly IXmlToastFactory _xmlToastFactory = Substitute.For<IXmlToastFactory>();
