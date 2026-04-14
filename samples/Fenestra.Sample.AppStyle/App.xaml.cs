@@ -21,6 +21,7 @@ public partial class App : FenestraApp
 
     protected override void Configure(WpfFenestraBuilder builder)
     {
+        builder.UseErrorHandler();
         builder.Services.AddWpfMinimizeToTray();
         builder.Services.AddWpfSingleInstance();
         builder.Services.AddWpfGlobalHotkeys();

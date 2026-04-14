@@ -32,7 +32,6 @@ public class WpfFenestraBuilder : WindowsFenestraBuilder
     {
         Services.AddSingleton<IWindowManager, WindowManager>();
         Services.AddSingleton<IDialogService, DialogService>();
-        Services.TryAddSingleton<IExceptionHandler, DefaultExceptionHandler>();
     }
 
     /// <summary>Sets the main window type for the application.</summary>
@@ -46,6 +45,38 @@ public class WpfFenestraBuilder : WindowsFenestraBuilder
     public WpfFenestraBuilder UseMainWindowFactory<TFactory>() where TFactory : class, IMainWindowFactory
     {
         Services.AddSingleton<IMainWindowFactory, TFactory>();
+        return this;
+    }
+
+    /// <summary>
+    /// Enables global exception handling using the built-in <see cref="DefaultExceptionHandler"/>,
+    /// which logs the exception and shows a message box to the user.
+    /// </summary>
+    public WpfFenestraBuilder UseErrorHandler()
+    {
+        Services.TryAddSingleton<IExceptionHandler, DefaultExceptionHandler>();
+        return this;
+    }
+
+    /// <summary>
+    /// Enables global exception handling using a custom <see cref="IExceptionHandler"/> type
+    /// resolved from the DI container.
+    /// </summary>
+    /// <typeparam name="T">The <see cref="IExceptionHandler"/> implementation to register.</typeparam>
+    public WpfFenestraBuilder UseErrorHandler<T>() where T : class, IExceptionHandler
+    {
+        Services.TryAddSingleton<IExceptionHandler, T>();
+        return this;
+    }
+
+    /// <summary>
+    /// Enables global exception handling using a pre-constructed <see cref="IExceptionHandler"/> instance.
+    /// </summary>
+    /// <typeparam name="T">The <see cref="IExceptionHandler"/> implementation type.</typeparam>
+    /// <param name="instance">The handler instance to use as a singleton.</param>
+    public WpfFenestraBuilder UseErrorHandler<T>(T instance) where T : class, IExceptionHandler
+    {
+        Services.TryAddSingleton<IExceptionHandler>(instance);
         return this;
     }
 

@@ -118,13 +118,14 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
             return;
         }
 
-        RegisterExceptionHandlers();
+        if (Services.GetService<IExceptionHandler>() != null)
+            RegisterExceptionHandlers();
 
         StartAsync().GetAwaiter().GetResult();
 
         singleInstance?.StartListening();
 
-        var toastActivation = Services.GetService(typeof(Windows.IToastActivationRegistrar)) as Windows.IToastActivationRegistrar;
+        var toastActivation = Services.GetService(typeof(IToastActivationRegistrar)) as IToastActivationRegistrar;
         toastActivation?.Register();
 
         // Splash runs its full lifecycle (show → load → close) before any other window is
@@ -192,7 +193,7 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
     {
         var windowState = Services.GetService<Services.WindowStateService>();
         windowState?.SaveAll();
-        
+
         _cts.Cancel();
         StopAsync().GetAwaiter().GetResult();
         Dispose();
