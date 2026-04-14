@@ -33,4 +33,17 @@ internal class WpfThreadContext : IThreadContext
 
         return app.Dispatcher.InvokeAsync(action).Task;
     }
+
+    /// <inheritdoc />
+    public void BeginInvoke(Action action)
+    {
+        var app = Application.Current;
+        if (app == null)
+        {
+            action();
+            return;
+        }
+
+        app.Dispatcher.BeginInvoke(action);
+    }
 }

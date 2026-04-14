@@ -14,4 +14,11 @@ public interface IThreadContext
     /// Invokes an action asynchronously on the main thread.
     /// </summary>
     Task InvokeAsync(Action action);
+
+    /// <summary>
+    /// Queues an action for execution on the main thread and returns immediately
+    /// without waiting for it to complete. Exceptions raised by the action are not
+    /// observed by the caller.
+    /// </summary>
+    void BeginInvoke(Action action);
 }

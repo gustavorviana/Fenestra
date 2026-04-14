@@ -81,4 +81,16 @@ public class SyncContextThreadContext : IThreadContext
 
         return tcs.Task;
     }
+
+    /// <inheritdoc />
+    public void BeginInvoke(Action action)
+    {
+        if (_context == null)
+        {
+            action();
+            return;
+        }
+
+        _context.Post(_ => action(), null);
+    }
 }
