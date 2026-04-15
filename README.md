@@ -1,6 +1,6 @@
 # Fenestra
 
-Fenestra is a Windows application framework that provides a structured hosting model with dependency injection, system tray integration, toast notifications, registry configuration, window state persistence, global hotkeys, theme detection, auto-start, single-instance enforcement, and more. It includes integration support for WPF.
+Fenestra is a Windows application framework that provides a structured hosting model with dependency injection, system tray integration, toast notifications, registry configuration, window state persistence, global hotkeys, theme detection, auto-start, single-instance enforcement, splash screens, and more. It includes integration support for WPF.
 
 Built on top of `Microsoft.Extensions.Hosting`, Fenestra eliminates the boilerplate of wiring up a modern Windows desktop application while keeping full control over the DI container, logging, and configuration.
 
@@ -253,6 +253,7 @@ Fenestra is modular. Each feature is opt-in via the `FenestraBuilder`:
 | Feature | Builder Method | Documentation |
 |---|---|---|
 | App Info (name, version, GUID) | Automatic | [App Info](https://github.com/gustavorviana/Fenestra/wiki/App-Info) |
+| Splash Screen (startup UI + progress) | `UseSplashScreen<T>()` | [Splash Screen](https://github.com/gustavorviana/Fenestra/wiki/Splash-Screen) |
 | Registry Configuration | Automatic | [Registry Config](https://github.com/gustavorviana/Fenestra/wiki/Registry-Config) |
 | Toast Notifications | `AddWindowsToastNotifications()` | [Toast Notifications](https://github.com/gustavorviana/Fenestra/wiki/Toast-Notifications) |
 | Toast Background Activation | `AddWindowsToastActivation()` | [Toast Activation](https://github.com/gustavorviana/Fenestra/wiki/Toast-Activation) |
@@ -301,6 +302,7 @@ These require an `Add*()` call on `builder.Services`:
 - `IIdleDetectionService` -- via `AddWindowsIdleDetection()`
 - `IAppLifecycleService` -- via `AddWindowsAppLifecycle()`
 - `ILocalizationService` -- via `AddWindowsLocalization()`
+- `ISplashScreen` -- via `UseSplashScreen<T>()` (also registers `IProgress<SplashStatus>` for services that want to report startup progress)
 
 ## Architecture
 

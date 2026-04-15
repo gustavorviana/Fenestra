@@ -121,6 +121,10 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         if (Services.GetService<IExceptionHandler>() != null)
             RegisterExceptionHandlers();
 
+        // Eagerly resolve ILocalizationService so its constructor applies the persisted
+        // culture to the process before any UI (splash or main window) materializes.
+        Services.GetService<ILocalizationService>();
+
         StartAsync().GetAwaiter().GetResult();
 
         singleInstance?.StartListening();
