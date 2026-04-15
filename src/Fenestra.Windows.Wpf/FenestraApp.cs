@@ -1,10 +1,9 @@
-using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Windows;
+using Fenestra.Wpf.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace Fenestra.Wpf;
 
@@ -100,7 +99,11 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        InitAsync(e).GetAwaiter().GetResult();
+    }
 
+    private async Task InitAsync(StartupEventArgs e)
+    {
         var builder = new WpfFenestraBuilder();
         builder.SetArgs(e.Args);
         Configure(builder);
@@ -109,44 +112,11 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         _host = builder.BuildHostInternal();
         AppInfo = _host.Services.GetRequiredService<AppInfo>();
 
-        var singleInstance = Services.GetService<Services.SingleInstanceGuard>();
-        if (singleInstance != null && !singleInstance.IsFirstInstance)
+        var status = await FenestraStartupPipeline.RunAsync(
+            Services, _host, _cts, e.Args, this);
+
+        if (status != StartupStatus.Continue)
         {
-            singleInstance.SendArguments(e.Args);
-            singleInstance.Dispose();
-            Shutdown(0);
-            return;
-        }
-
-        if (Services.GetService<IExceptionHandler>() != null)
-            RegisterExceptionHandlers();
-
-        // Eagerly resolve ILocalizationService so its constructor applies the persisted
-        // culture to the process before any UI (splash or main window) materializes.
-        Services.GetService<ILocalizationService>();
-
-        StartAsync().GetAwaiter().GetResult();
-
-        singleInstance?.StartListening();
-
-        var toastActivation = Services.GetService(typeof(IToastActivationRegistrar)) as IToastActivationRegistrar;
-        toastActivation?.Register();
-
-        // Splash runs its full lifecycle (show → load → close) before any other window is
-        // resolved, so nothing else can open while the splash is on screen. The splash owns
-        // the loading logic (via ISplashScreen.RunAsync) and signals completion by returning
-        // from RunToCompletion — only then do we proceed to the main window. If the user
-        // cancels the splash (via the close button), RunToCompletion throws OCE and we tear
-        // the host down without ever showing the main window.
-        var splashCoordinator = Services.GetService<Services.WpfSplashCoordinator>();
-        try
-        {
-            splashCoordinator?.RunToCompletion(_cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            _cts.Cancel();
-            StopAsync().GetAwaiter().GetResult();
             Shutdown(0);
             return;
         }
@@ -155,7 +125,7 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         if (mainWindow is null)
         {
             _cts.Cancel();
-            StopAsync().GetAwaiter().GetResult();
+            await StopAsync();
             Shutdown(0);
             return;
         }
@@ -202,44 +172,5 @@ public abstract class FenestraApp : Application, IHost, IWpfApplication
         StopAsync().GetAwaiter().GetResult();
         Dispose();
         base.OnExit(e);
-    }
-
-    private void RegisterExceptionHandlers()
-    {
-        DispatcherUnhandledException += OnDispatcherUnhandledException;
-        AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
-        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
-    }
-
-    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
-        var context = new FenestraExceptionContext(e.Exception, isCritical: false);
-        HandleException(context);
-        e.Handled = context.Handled;
-    }
-
-    private void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
-    {
-        if (e.ExceptionObject is Exception ex)
-        {
-            var context = new FenestraExceptionContext(ex, isCritical: true);
-            HandleException(context);
-        }
-    }
-
-    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
-    {
-        var context = new FenestraExceptionContext(e.Exception, isCritical: false);
-        HandleException(context);
-        if (context.Handled)
-        {
-            e.SetObserved();
-        }
-    }
-
-    private void HandleException(FenestraExceptionContext context)
-    {
-        var handler = Services.GetRequiredService<IExceptionHandler>();
-        handler.Handle(context);
     }
 }

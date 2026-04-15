@@ -1,3 +1,4 @@
+using Fenestra.Core;
 using System.Globalization;
 
 namespace Fenestra.Windows.Services;
@@ -6,12 +7,14 @@ namespace Fenestra.Windows.Services;
 /// <see cref="ILocalizationService"/> implementation backed by <see cref="IRegistryConfig"/>.
 ///
 /// <para>
-/// The constructor validates <see cref="LocalizationOptions"/>, resolves the initial culture
-/// (persisted → OS → default, in priority order), and applies it to the process. Runtime
-/// changes via <see cref="SetCulture"/> are persisted and broadcast to subscribers.
+/// The constructor validates <see cref="LocalizationOptions"/> and seeds the current culture
+/// with the configured default. <see cref="InitAsync"/> (invoked during host startup via the
+/// <see cref="IFenestraModule"/> pipeline) resolves the effective culture in priority order
+/// (persisted → OS → default) and applies it to the process. Runtime changes via
+/// <see cref="SetCulture"/> are persisted and broadcast to subscribers.
 /// </para>
 /// </summary>
-internal sealed class LocalizationService : ILocalizationService
+internal sealed class LocalizationService : ILocalizationService, IFenestraModule
 {
     private const string SectionName = "Localization";
     private const string KeySelectedCulture = "SelectedCulture";
@@ -64,11 +67,19 @@ internal sealed class LocalizationService : ILocalizationService
                 $"Default culture '{options.Default}' is not in the Supported list.",
                 nameof(options));
 
-        // Resolve initial culture in priority order: persisted → OS → default.
-        _current = ResolveInitialCulture();
+        // Seed with the configured default so CurrentCulture is valid before InitAsync runs.
+        // InitAsync will overwrite this with the persisted/OS-matched culture.
+        _current = _default;
+    }
 
-        // Apply without raising the event — this is the initial state, not a change.
+    public Task InitAsync(CancellationToken cancellationToken)
+    {
+        // Resolve the effective culture in priority order: persisted → OS → default,
+        // then apply it to the process. Called once by the Fenestra startup pipeline
+        // before any UI materializes.
+        _current = ResolveInitialCulture();
         ApplyCulture(_current);
+        return Task.CompletedTask;
     }
 
     private CultureInfo ResolveInitialCulture()

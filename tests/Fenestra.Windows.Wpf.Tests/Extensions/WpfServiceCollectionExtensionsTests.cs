@@ -98,6 +98,9 @@ public class WpfServiceCollectionExtensionsTests
         Assert.Contains(services, d =>
             d.ServiceType == typeof(SingleInstanceGuard) &&
             d.Lifetime == ServiceLifetime.Singleton);
+        Assert.Contains(services, d =>
+            d.ServiceType == typeof(Fenestra.Core.IFenestraModule) &&
+            d.Lifetime == ServiceLifetime.Singleton);
     }
 
     // --- AddWpfGlobalHotkeys ---

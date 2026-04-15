@@ -15,7 +15,7 @@ namespace Fenestra.Windows.Services;
 /// </list>
 /// Opt in via <c>builder.UseWindowsToastActivation()</c>.
 /// </summary>
-internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
+internal class ToastActivationRegistrar : IToastActivationRegistrar, IFenestraModule, IDisposable
 {
     private readonly IThreadContext _threadContext;
     private readonly IApplicationActivator? _activator;
@@ -65,6 +65,12 @@ internal class ToastActivationRegistrar : IToastActivationRegistrar, IDisposable
         catch { }
 
         _registered = false;
+    }
+
+    public Task InitAsync(CancellationToken cancellationToken)
+    {
+        Register();
+        return Task.CompletedTask;
     }
 
     public void Dispose()

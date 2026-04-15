@@ -1,4 +1,5 @@
-using Fenestra.Windows;
+using Fenestra.Core;
+using Fenestra.Windows.Extensions;
 using Fenestra.Windows.Services;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -113,8 +114,13 @@ public class ServiceCollectionExtensionsTests
         services.AddWindowsToastActivation();
 
         Assert.Contains(services, d =>
+            d.ServiceType == typeof(ToastActivationRegistrar) &&
+            d.Lifetime == ServiceLifetime.Singleton);
+        Assert.Contains(services, d =>
             d.ServiceType == typeof(IToastActivationRegistrar) &&
-            d.ImplementationType == typeof(ToastActivationRegistrar) &&
+            d.Lifetime == ServiceLifetime.Singleton);
+        Assert.Contains(services, d =>
+            d.ServiceType == typeof(Fenestra.Core.IFenestraModule) &&
             d.Lifetime == ServiceLifetime.Singleton);
     }
 

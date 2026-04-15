@@ -1,4 +1,4 @@
-namespace Fenestra.Windows;
+namespace Fenestra.Core;
 
 /// <summary>
 /// Tracks first-run and version-upgrade state for a Fenestra application, persisted in

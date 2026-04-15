@@ -1,11 +1,10 @@
-using Fenestra.Core;
 using Fenestra.Core.Models;
 using Fenestra.Windows;
+using Fenestra.Wpf.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace Fenestra.Wpf;
 
@@ -148,7 +147,7 @@ public class FenestraApplication : IHost, IWpfApplication
             Exception? caught = null;
             var thread = new Thread(() =>
             {
-                try { RunCore(); }
+                try { RunCoreAsync().GetAwaiter().GetResult(); }
                 catch (Exception ex) { caught = ex; }
             });
             thread.SetApartmentState(ApartmentState.STA);
@@ -161,60 +160,28 @@ public class FenestraApplication : IHost, IWpfApplication
             return;
         }
 
-        RunCore();
+        RunCoreAsync().GetAwaiter().GetResult();
     }
 
-    private void RunCore()
+    private async Task RunCoreAsync()
     {
-        var singleInstance = Services.GetService(typeof(Services.SingleInstanceGuard)) as Services.SingleInstanceGuard;
-        if (singleInstance != null && !singleInstance.IsFirstInstance)
-        {
-            singleInstance.SendArguments(Environment.GetCommandLineArgs().Skip(1).ToArray());
-            singleInstance.Dispose();
-            Dispose();
-            return;
-        }
-
         var wpfApp = CreateWpfApplication();
+        var args = Environment.GetCommandLineArgs().Skip(1).ToArray();
 
-        RegisterExceptionHandlers(wpfApp);
+        var status = await FenestraStartupPipeline.RunAsync(
+            Services, _host, _cts, args, wpfApp);
 
-        // Eagerly resolve ILocalizationService so its constructor applies the persisted
-        // culture to the process before any UI (splash or main window) materializes.
-        Services.GetService<ILocalizationService>();
-
-        StartAsync().GetAwaiter().GetResult();
-
-        singleInstance?.StartListening();
-
-        var toastActivation = Services.GetService(typeof(Windows.IToastActivationRegistrar)) as Windows.IToastActivationRegistrar;
-        toastActivation?.Register();
-
-        // Splash runs its full lifecycle (show → load → close) before any other window is
-        // resolved, so nothing else can open while the splash is on screen. The splash owns
-        // the loading logic (via ISplashScreen.RunAsync) and signals completion by returning
-        // from RunToCompletion — only then do we proceed to the main window. If the user
-        // cancels the splash (via the close button), RunToCompletion throws OCE and we tear
-        // the host down without ever showing the main window.
-        var splashCoordinator = Services.GetService<Services.WpfSplashCoordinator>();
-        try
+        if (status != StartupStatus.Continue)
         {
-            splashCoordinator?.RunToCompletion(_cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            _cts.Cancel();
-            StopAsync().GetAwaiter().GetResult();
             Dispose();
             return;
         }
 
         var shell = ResolveMainWindow();
-
         if (shell is null)
         {
             _cts.Cancel();
-            StopAsync().GetAwaiter().GetResult();
+            await StopAsync();
             Dispose();
             return;
         }
@@ -239,7 +206,7 @@ public class FenestraApplication : IHost, IWpfApplication
         var windowState = Services.GetService<Services.WindowStateService>();
         windowState?.SaveAll();
         _cts.Cancel();
-        StopAsync().GetAwaiter().GetResult();
+        await StopAsync();
         Dispose();
     }
 
@@ -281,44 +248,5 @@ public class FenestraApplication : IHost, IWpfApplication
         }
 
         return new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
-    }
-
-    private void RegisterExceptionHandlers(Application application)
-    {
-        application.DispatcherUnhandledException += OnDispatcherUnhandledException;
-        AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
-        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
-    }
-
-    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
-        var context = new FenestraExceptionContext(e.Exception, isCritical: false);
-        HandleException(context);
-        e.Handled = context.Handled;
-    }
-
-    private void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
-    {
-        if (e.ExceptionObject is Exception ex)
-        {
-            var context = new FenestraExceptionContext(ex, isCritical: true);
-            HandleException(context);
-        }
-    }
-
-    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
-    {
-        var context = new FenestraExceptionContext(e.Exception, isCritical: false);
-        HandleException(context);
-        if (context.Handled)
-        {
-            e.SetObserved();
-        }
-    }
-
-    private void HandleException(FenestraExceptionContext context)
-    {
-        var handler = Services.GetRequiredService<IExceptionHandler>();
-        handler.Handle(context);
     }
 }

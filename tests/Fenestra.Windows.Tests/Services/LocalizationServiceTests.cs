@@ -1,4 +1,4 @@
-using Fenestra.Windows;
+using Fenestra.Core;
 using Fenestra.Windows.Services;
 using NSubstitute;
 using System.Globalization;
@@ -44,7 +44,8 @@ public class LocalizationServiceTests : IDisposable
     private LocalizationService CreateSut(
         string[]? supported = null,
         string? @default = null,
-        string? persisted = null)
+        string? persisted = null,
+        bool runInit = true)
     {
         var opts = new LocalizationOptions
         {
@@ -52,7 +53,10 @@ public class LocalizationServiceTests : IDisposable
             Default = @default ?? "en-US",
         };
         SetupPersisted(persisted);
-        return new LocalizationService(opts, _rootConfig);
+        var sut = new LocalizationService(opts, _rootConfig);
+        if (runInit)
+            sut.InitAsync(CancellationToken.None).GetAwaiter().GetResult();
+        return sut;
     }
 
     private void SetupPersisted(string? persisted)
@@ -124,7 +128,67 @@ public class LocalizationServiceTests : IDisposable
     }
 
     // =====================================================================
-    // Ctor — initial culture resolution
+    // Ctor — pre-InitAsync state
+    // =====================================================================
+
+    [Fact]
+    public void Ctor_BeforeInit_CurrentCultureSeededWithDefault()
+    {
+        SetupPersisted("pt-BR");
+        var sut = CreateSut(
+            supported: new[] { "en-US", "pt-BR" },
+            @default: "en-US",
+            persisted: "pt-BR",
+            runInit: false);
+
+        // Before InitAsync runs, CurrentCulture is seeded with the configured default,
+        // not the persisted culture.
+        Assert.Equal("en-US", sut.CurrentCulture.Name);
+    }
+
+    [Fact]
+    public void Ctor_BeforeInit_DoesNotTouchProcessCulture()
+    {
+        var before = Thread.CurrentThread.CurrentCulture;
+        SetupPersisted("pt-BR");
+
+        _ = CreateSut(
+            supported: new[] { "en-US", "pt-BR" },
+            @default: "en-US",
+            persisted: "pt-BR",
+            runInit: false);
+
+        Assert.Equal(before.Name, Thread.CurrentThread.CurrentCulture.Name);
+    }
+
+    // =====================================================================
+    // InitAsync — IFenestraModule contract
+    // =====================================================================
+
+    [Fact]
+    public void LocalizationService_ImplementsIFenestraModule()
+    {
+        var sut = CreateSut(runInit: false);
+        Assert.IsAssignableFrom<IFenestraModule>(sut);
+    }
+
+    [Fact]
+    public async Task InitAsync_ResolvesPersistedCulture()
+    {
+        SetupPersisted("pt-BR");
+        var sut = CreateSut(
+            supported: new[] { "en-US", "pt-BR" },
+            @default: "en-US",
+            persisted: "pt-BR",
+            runInit: false);
+
+        await ((IFenestraModule)sut).InitAsync(CancellationToken.None);
+
+        Assert.Equal("pt-BR", sut.CurrentCulture.Name);
+    }
+
+    // =====================================================================
+    // Ctor + InitAsync — initial culture resolution
     // =====================================================================
 
     [Fact]

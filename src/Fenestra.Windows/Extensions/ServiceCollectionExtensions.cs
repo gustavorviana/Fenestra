@@ -1,8 +1,13 @@
+using Fenestra.Core;
+using Fenestra.Core.Extensions;
+using Fenestra.Core.Models;
+using Fenestra.Windows.Localization;
 using Fenestra.Windows.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Resources;
 
-namespace Fenestra.Windows;
+namespace Fenestra.Windows.Extensions;
 
 /// <summary>
 /// Extension methods for registering Fenestra.Windows services in <see cref="IServiceCollection"/>.
@@ -56,7 +61,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddWindowsToastActivation(this IServiceCollection services)
     {
-        services.AddSingleton<IToastActivationRegistrar, ToastActivationRegistrar>();
+        services.AddModule<IToastActivationRegistrar, ToastActivationRegistrar>();
         return services;
     }
 
@@ -96,7 +101,7 @@ public static class ServiceCollectionExtensions
     /// Polls <c>GetLastInputInfo</c> on a pool-based <see cref="System.Threading.Timer"/> and
     /// raises <c>BecameIdle</c>/<c>BecameActive</c> events on transitions. Framework-agnostic —
     /// works in WPF, WinForms, console, and background Windows hosts. If an
-    /// <see cref="Fenestra.Core.IThreadContext"/> is registered (e.g., by <c>WpfFenestraBuilder</c>),
+    /// <see cref="Core.IThreadContext"/> is registered (e.g., by <c>WpfFenestraBuilder</c>),
     /// events are marshalled to the dispatcher thread automatically.
     /// </summary>
     public static IServiceCollection AddWindowsIdleDetection(
@@ -138,8 +143,42 @@ public static class ServiceCollectionExtensions
 
         var options = new LocalizationOptions();
         configure(options);
+
         services.AddSingleton(options);
-        services.AddSingleton<ILocalizationService, LocalizationService>();
+        services.AddModule<ILocalizationService, LocalizationService>();
+        RegisterResources(options);
+
         return services;
+    }
+
+    private static void RegisterResources(LocalizationOptions options)
+    {
+        var translationSource = TranslationSource.Instance;
+
+        foreach (var res in options.Resources)
+        {
+            LocalizationRegistryBuilder.Register(
+                translationSource,
+                alias: res.Alias.ToLowerInvariant(),
+                manager: new ResourceManager(res.BaseName, res.Assembly),
+                baseName: res.BaseName,
+                behavior: options.DuplicateBehavior);
+        }
+
+        foreach (var def in options.AutoDiscoverAssemblies)
+        {
+            var manifestNames = def.Assembly.GetManifestResourceNames();
+
+            foreach (var (baseName, alias) in LocalizationRegistryBuilder.EnumerateAutoDiscovered(
+                         manifestNames, def.Prefix, def.NamespaceFilter))
+            {
+                LocalizationRegistryBuilder.Register(
+                    translationSource,
+                    alias: alias,
+                    manager: new ResourceManager(baseName, def.Assembly),
+                    baseName: baseName,
+                    behavior: options.DuplicateBehavior);
+            }
+        }
     }
 }

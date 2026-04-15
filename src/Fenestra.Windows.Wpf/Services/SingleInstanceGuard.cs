@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace Fenestra.Wpf.Services;
 
-internal class SingleInstanceGuard : IDisposable
+internal class SingleInstanceGuard : IFenestraModule, IDisposable
 {
     private readonly string _pipeName;
     private readonly Mutex _mutex;
@@ -31,6 +31,15 @@ internal class SingleInstanceGuard : IDisposable
 
         _cts = new CancellationTokenSource();
         Task.Run(() => ListenLoop(_cts.Token));
+    }
+
+    public Task InitAsync(CancellationToken cancellationToken)
+    {
+        // No-op when this is not the first instance — the pre-check in the entry point
+        // has already bailed out in that case and we should never reach the module init
+        // loop. The StartListening() guard provides defense in depth.
+        StartListening();
+        return Task.CompletedTask;
     }
 
     public void SendArguments(string[] args)

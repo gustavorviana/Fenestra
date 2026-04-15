@@ -1,3 +1,4 @@
+using Fenestra.Core.Extensions;
 using Fenestra.Windows;
 using Fenestra.Wpf.Services;
 
@@ -39,7 +40,7 @@ public static class WpfServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddWpfSingleInstance(this IServiceCollection services)
     {
-        services.AddSingleton<SingleInstanceGuard>();
+        services.AddModule<SingleInstanceGuard>();
         return services;
     }
 

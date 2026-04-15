@@ -102,6 +102,17 @@ public sealed class TranslationSource : INotifyPropertyChanged
         }
     }
 
+    public bool HasResourceManager(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return false;
+
+        lock (_lock)
+        {
+            return _resourceManagers.ContainsKey(name);
+        }
+    }
+
     /// <summary>
     /// Removes a previously registered <see cref="ResourceManager"/> by name.
     /// Returns <c>true</c> if the name was registered and removed.

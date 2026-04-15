@@ -1,4 +1,4 @@
-namespace Fenestra.Windows.Models;
+namespace Fenestra.Core.Models;
 
 /// <summary>
 /// Specifies the application theme mode.

@@ -1,7 +1,6 @@
-using Fenestra.Core;
-using Fenestra.Windows.Models;
+using Fenestra.Core.Models;
 
-namespace Fenestra.Windows;
+namespace Fenestra.Core;
 
 /// <summary>
 /// Detects the current app theme (dark/light) and notifies on changes.

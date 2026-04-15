@@ -1,3 +1,4 @@
+using Fenestra.Core;
 using Fenestra.Core.Models;
 
 namespace Fenestra.Windows.Services;

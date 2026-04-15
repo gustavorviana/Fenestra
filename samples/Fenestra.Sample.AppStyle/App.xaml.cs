@@ -1,5 +1,6 @@
 using Fenestra.Core;
 using Fenestra.Windows;
+using Fenestra.Windows.Extensions;
 using Fenestra.Windows.Models;
 using Fenestra.Windows.Tray;
 using Fenestra.Wpf;

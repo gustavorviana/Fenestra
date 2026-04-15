@@ -1,5 +1,5 @@
 using Fenestra.Sample.BuilderStyle;
-using Fenestra.Windows;
+using Fenestra.Windows.Extensions;
 using Fenestra.Wpf;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +17,7 @@ builder.Services.AddWindowsLocalization(opts =>
 {
     opts.Supported = new[] { "en-US", "pt-BR", "es-ES" };
     opts.Default = "en-US";
+    opts.AutoDiscoverFrom(typeof(MainWindow).Assembly);
 });
 builder.RegisterWindows();
 

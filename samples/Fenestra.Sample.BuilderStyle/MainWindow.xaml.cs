@@ -62,16 +62,6 @@ public partial class MainWindow : Window, IMinimizeToTray
         LifecycleInstallDateText.Text = $"First install: {_lifecycle.FirstInstallDate:yyyy-MM-dd HH:mm:ss zzz}";
         LifecycleLaunchCountText.Text = $"Launch count: {_lifecycle.LaunchCount}";
 
-        // Localization — register the app's resource managers so {fenestra:Tr ...}
-        // bindings in XAML can resolve keys. Named so the same source can serve multiple
-        // .resx families (messages, errors, etc.).
-        TranslationSource.Instance.AddResourceManager(
-            "messages",
-            new ResourceManager("Fenestra.Sample.BuilderStyle.Resources.Messages", typeof(MainWindow).Assembly));
-        TranslationSource.Instance.AddResourceManager(
-            "errors",
-            new ResourceManager("Fenestra.Sample.BuilderStyle.Resources.Errors", typeof(MainWindow).Assembly));
-
         // Bridge: when the localization service changes culture, tell the translation
         // source to invalidate its bindings so WPF re-evaluates every {fenestra:Tr ...}.
         _localization.CultureChanged += (_, _) =>

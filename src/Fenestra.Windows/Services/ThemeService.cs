@@ -1,5 +1,5 @@
 using Fenestra.Core;
-using Fenestra.Windows.Models;
+using Fenestra.Core.Models;
 using Microsoft.Win32;
 
 namespace Fenestra.Windows.Services;
