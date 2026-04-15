@@ -42,6 +42,7 @@ public class WindowsFenestraBuilder : FenestraBuilder
         var registryPath = $@"SOFTWARE\{appInfo.AppName}";
         var registryConfig = new RegistryConfigService(registryPath);
         services.AddSingleton<IRegistryConfig>(registryConfig);
+        services.AddSingleton<IRegistryConfigFactory, RegistryConfigFactory>();
 
         // AppGuid persistence (Windows Registry)
         if (appInfo is WindowsAppInfo windowsInfo && windowsInfo.AppGuid == Guid.Empty)
