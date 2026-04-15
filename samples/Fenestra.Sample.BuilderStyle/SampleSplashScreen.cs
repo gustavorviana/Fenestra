@@ -60,9 +60,9 @@ public class SampleSplashScreen : SplashScreenBase
         var steps = new (string Message, int DelayMs)[]
         {
             ("Loading configuration...", 1000),
-            ("Connecting to services...", 2000),
+            ("Connecting to services...", 500),
             ("Preparing workspace...",    1000),
-            ("Almost there...",           2000),
+            ("Almost there...",           500),
         };
 
         for (var i = 0; i < steps.Length; i++)

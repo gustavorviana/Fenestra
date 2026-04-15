@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 var builder = FenestraApplication.CreateBuilder(args);
 builder.UseMainWindow<MainWindow>();
 builder.UseErrorHandler();
-//builder.UseSplashScreen<SampleSplashScreen>();
+builder.UseSplashScreen<SampleSplashScreen>();
 builder.Services.AddWpfMinimizeToTray();
 builder.Services.AddWindowsCredentialVault();
 builder.Services.AddWindowsIdleDetection(opts => opts.Threshold = TimeSpan.FromSeconds(10));

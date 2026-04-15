@@ -7,7 +7,7 @@ namespace Fenestra.Windows.Services;
 /// <summary>
 /// <see cref="IRegistryConfig"/> implementation backed by HKEY_CURRENT_USER.
 /// </summary>
-internal sealed class RegistryConfigService : IRegistryConfig
+public sealed class RegistryConfigService : IRegistryConfig
 {
     private readonly RegistryKey _key;
     private readonly bool _ownsKey;
@@ -31,7 +31,7 @@ internal sealed class RegistryConfigService : IRegistryConfig
     /// <summary>
     /// Wraps an already-open key (used for child sections).
     /// </summary>
-    internal RegistryConfigService(RegistryKey key)
+    public RegistryConfigService(RegistryKey key)
     {
         _key = key ?? throw new ArgumentNullException(nameof(key));
         _ownsKey = true;
