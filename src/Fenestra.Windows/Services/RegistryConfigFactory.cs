@@ -7,6 +7,11 @@ namespace Fenestra.Windows.Services;
 /// </summary>
 public sealed class RegistryConfigFactory : IRegistryConfigFactory
 {
+    private readonly RegistryConfigOptions _options;
+
+    public RegistryConfigFactory(RegistryConfigOptions? options = null)
+        => _options = options ?? RegistryConfigOptions.Default;
+
     public IRegistryConfig OpenOrCreate(RegistryHive hive, string keyPath, RegistryView view = RegistryView.Default)
     {
         Platform.EnsureWindows();
@@ -15,13 +20,13 @@ public sealed class RegistryConfigFactory : IRegistryConfigFactory
         var normalized = Normalize(keyPath);
 
         if (normalized.Length == 0)
-            return new RegistryConfigService(baseKey);
+            return new RegistryConfigService(baseKey, _options);
 
         var key = baseKey.CreateSubKey(normalized, writable: true)
             ?? throw new InvalidOperationException($"Failed to open or create registry key: {hive}\\{normalized}");
 
         baseKey.Dispose();
-        return new RegistryConfigService(key);
+        return new RegistryConfigService(key, _options);
     }
 
     public IRegistryConfig? Open(RegistryHive hive, string keyPath, bool writable = true, RegistryView view = RegistryView.Default)
@@ -32,11 +37,11 @@ public sealed class RegistryConfigFactory : IRegistryConfigFactory
         var normalized = Normalize(keyPath);
 
         if (normalized.Length == 0)
-            return new RegistryConfigService(baseKey);
+            return new RegistryConfigService(baseKey, _options);
 
         var key = baseKey.OpenSubKey(normalized, writable);
         baseKey.Dispose();
-        return key is null ? null : new RegistryConfigService(key);
+        return key is null ? null : new RegistryConfigService(key, _options);
     }
 
     public IRegistryConfig OpenOrCreate(string fullPath, RegistryView view = RegistryView.Default)

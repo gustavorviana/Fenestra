@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 
@@ -11,12 +12,14 @@ public sealed class RegistryConfigService : IRegistryConfig
 {
     private readonly RegistryKey _key;
     private readonly bool _ownsKey;
+    private readonly RegistryConfigOptions _options;
+    private readonly RegistryConverterRegistry _converters;
     private bool _disposed;
 
     /// <summary>
     /// Opens or creates a key under HKEY_CURRENT_USER.
     /// </summary>
-    public RegistryConfigService(string keyPath)
+    public RegistryConfigService(string keyPath, RegistryConfigOptions? options = null)
     {
         Platform.EnsureWindows();
 
@@ -26,15 +29,31 @@ public sealed class RegistryConfigService : IRegistryConfig
         _key = Registry.CurrentUser.CreateSubKey(keyPath.Replace('/', '\\'), true)
             ?? throw new InvalidOperationException($"Failed to open or create registry key: {keyPath}");
         _ownsKey = true;
+        _options = options ?? RegistryConfigOptions.Default;
+        _converters = new RegistryConverterRegistry(_options.Converters);
     }
 
     /// <summary>
     /// Wraps an already-open key (used for child sections).
     /// </summary>
-    public RegistryConfigService(RegistryKey key)
+    public RegistryConfigService(RegistryKey key, RegistryConfigOptions? options = null)
     {
         _key = key ?? throw new ArgumentNullException(nameof(key));
         _ownsKey = true;
+        _options = options ?? RegistryConfigOptions.Default;
+        _converters = new RegistryConverterRegistry(_options.Converters);
+    }
+
+    /// <summary>
+    /// Child-section ctor: reuses the parent's options and converter registry
+    /// (so the resolution cache is shared down the section tree).
+    /// </summary>
+    private RegistryConfigService(RegistryKey key, RegistryConfigOptions options, RegistryConverterRegistry converters)
+    {
+        _key = key;
+        _ownsKey = true;
+        _options = options;
+        _converters = converters;
     }
 
     public void Set(string name, object? value)
@@ -140,11 +159,11 @@ public sealed class RegistryConfigService : IRegistryConfig
 
         var subKey = _key.OpenSubKey(sectionName, true);
         if (subKey is not null)
-            return new RegistryConfigService(subKey);
+            return new RegistryConfigService(subKey, _options, _converters);
 
         if (!createIfNotExists) return null;
 
-        return new RegistryConfigService(_key.CreateSubKey(sectionName, true));
+        return new RegistryConfigService(_key.CreateSubKey(sectionName, true), _options, _converters);
     }
 
     public bool Exists(string name)
@@ -185,7 +204,7 @@ public sealed class RegistryConfigService : IRegistryConfig
 
     // ── Reflection-based section read/write ──────────────────────────
 
-    private static void ReadInto(object target, RegistryKey source)
+    private void ReadInto(object target, RegistryKey source)
     {
         foreach (var prop in target.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
@@ -209,7 +228,7 @@ public sealed class RegistryConfigService : IRegistryConfig
         }
     }
 
-    private static void WriteFrom(object source, RegistryKey target)
+    private void WriteFrom(object source, RegistryKey target)
     {
         foreach (var prop in source.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
         {
@@ -238,8 +257,19 @@ public sealed class RegistryConfigService : IRegistryConfig
 
     // ── Type conversion ──────────────────────────────────────────────
 
-    private static (object value, RegistryValueKind kind) ConvertToRegistry(object value)
+    private (object value, RegistryValueKind kind) ConvertToRegistry(object value)
     {
+        if (_converters.Resolve(value.GetType()) is { } converter)
+        {
+            var produced = converter.ToRegistry(value);
+            // Infer the registry kind from the produced value via the built-in
+            // pipeline. Guard against a converter emitting its own type (loop).
+            if (produced.GetType() == value.GetType())
+                throw new InvalidOperationException(
+                    $"Converter for '{value.GetType().FullName}' returned the same type; it must produce a registry-storable value.");
+            return ConvertToRegistry(produced);
+        }
+
         return value switch
         {
             int v    => (v, RegistryValueKind.DWord),
@@ -268,13 +298,26 @@ public sealed class RegistryConfigService : IRegistryConfig
             Version v        => (v.ToString(), RegistryValueKind.String),
             Uri v            => (v.AbsoluteUri, RegistryValueKind.String),
 
-            _ => throw new NotSupportedException($"Type '{value.GetType().FullName}' is not supported by RegistryConfig.")
+            _ => ConvertViaTypeConverter(value)
         };
     }
 
-    private static object ConvertFromRegistry(object raw, Type target)
+    private static (object value, RegistryValueKind kind) ConvertViaTypeConverter(object value)
+    {
+        // (static: only reached after FindConverter miss)
+        var converter = TypeDescriptor.GetConverter(value.GetType());
+        if (converter != null && converter.CanConvertTo(typeof(string)))
+            return (converter.ConvertToInvariantString(value)!, RegistryValueKind.String);
+
+        throw new NotSupportedException($"Type '{value.GetType().FullName}' is not supported by RegistryConfig.");
+    }
+
+    private object ConvertFromRegistry(object raw, Type target)
     {
         var underlying = Nullable.GetUnderlyingType(target) ?? target;
+
+        if (_converters.Resolve(underlying) is { } converter)
+            return converter.ToClr(raw);
 
         if (underlying == typeof(string))  return raw.ToString()!;
         if (underlying == typeof(byte[]))  return (byte[])raw;
@@ -307,6 +350,10 @@ public sealed class RegistryConfigService : IRegistryConfig
         if (underlying == typeof(decimal))        return decimal.Parse(str, CultureInfo.InvariantCulture);
         if (underlying == typeof(Version))        return Version.Parse(str);
         if (underlying == typeof(Uri))            return new Uri(str);
+
+        var typeConverter = TypeDescriptor.GetConverter(underlying);
+        if (typeConverter != null && typeConverter.CanConvertFrom(typeof(string)))
+            return typeConverter.ConvertFromInvariantString(str)!;
 
         throw new NotSupportedException($"Type '{target.FullName}' is not supported by RegistryConfig.");
     }

@@ -13,6 +13,7 @@ namespace Fenestra.Windows;
 public class WindowsFenestraBuilder : FenestraBuilder
 {
     protected Type? _windowPositionStorageType;
+    private readonly RegistryConfigOptions _registryOptions = new();
 
     /// <summary>
     /// Uses a custom <see cref="IWindowPositionStorage"/> implementation.
@@ -21,6 +22,18 @@ public class WindowsFenestraBuilder : FenestraBuilder
     public WindowsFenestraBuilder UseWindowsPositionStorage<T>() where T : class, IWindowPositionStorage
     {
         _windowPositionStorageType = typeof(T);
+        return this;
+    }
+
+    /// <summary>
+    /// Configures registry conversion options (culture and custom
+    /// <see cref="IRegistryValueConverter"/>s) used by <see cref="IRegistryConfig"/>
+    /// and <see cref="IRegistryConfigFactory"/>.
+    /// </summary>
+    public WindowsFenestraBuilder ConfigureRegistry(Action<RegistryConfigOptions> configure)
+    {
+        if (configure is null) throw new ArgumentNullException(nameof(configure));
+        configure(_registryOptions);
         return this;
     }
 
@@ -40,9 +53,9 @@ public class WindowsFenestraBuilder : FenestraBuilder
 
         // Registry config
         var registryPath = $@"SOFTWARE\{appInfo.AppName}";
-        var registryConfig = new RegistryConfigService(registryPath);
+        var registryConfig = new RegistryConfigService(registryPath, _registryOptions);
         services.AddSingleton<IRegistryConfig>(registryConfig);
-        services.AddSingleton<IRegistryConfigFactory, RegistryConfigFactory>();
+        services.AddSingleton<IRegistryConfigFactory>(new RegistryConfigFactory(_registryOptions));
 
         // AppGuid persistence (Windows Registry)
         if (appInfo is WindowsAppInfo windowsInfo && windowsInfo.AppGuid == Guid.Empty)
