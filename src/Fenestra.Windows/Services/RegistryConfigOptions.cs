@@ -16,4 +16,12 @@ public sealed class RegistryConfigOptions
     /// is assignable from the value's type wins.
     /// </summary>
     public IList<IRegistryValueConverter> Converters { get; } = new List<IRegistryValueConverter>();
+
+    /// <summary>
+    /// How <see cref="System.Enum"/> values are serialized. Defaults to
+    /// <see cref="EnumStorageMode.Numeric"/> (REG_DWORD). Set to
+    /// <see cref="EnumStorageMode.Name"/> to store the member name as REG_SZ.
+    /// Reads accept either representation regardless of this setting.
+    /// </summary>
+    public EnumStorageMode EnumStorage { get; set; } = EnumStorageMode.Numeric;
 }

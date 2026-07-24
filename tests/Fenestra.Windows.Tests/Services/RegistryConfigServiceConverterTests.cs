@@ -20,9 +20,12 @@ public sealed class RegistryConfigServiceConverterTests
         public IRegistryConfig Config { get; }
 
         public TempRegistry(params IRegistryValueConverter[] converters)
+            : this(EnumStorageMode.Numeric, converters) { }
+
+        public TempRegistry(EnumStorageMode enumStorage, params IRegistryValueConverter[] converters)
         {
             _path = $@"SOFTWARE\FenestraTests\{Guid.NewGuid():N}";
-            var options = new RegistryConfigOptions();
+            var options = new RegistryConfigOptions { EnumStorage = enumStorage };
             foreach (var c in converters) options.Converters.Add(c);
             Config = new RegistryConfigService(_path, options);
         }
@@ -146,6 +149,62 @@ public sealed class RegistryConfigServiceConverterTests
         reg.Config.Set("Ratio", new Fraction(3, 4));
 
         Assert.IsType<int>(reg.Config.GetValue("Ratio")); // REG_DWORD
+    }
+
+    // ── Enum storage mode ────────────────────────────────────────────
+
+    private enum Color { Red = 1, Green = 2, Blue = 3 }
+
+    [Fact]
+    public void Enum_stored_as_dword_by_default()
+    {
+        using var reg = new TempRegistry();
+
+        reg.Config.Set("Hue", Color.Green);
+
+        Assert.IsType<int>(reg.Config.GetValue("Hue")); // REG_DWORD
+        Assert.Equal(2, reg.Config.GetValue("Hue"));
+        Assert.Equal(Color.Green, reg.Config.Get<Color>("Hue"));
+    }
+
+    [Fact]
+    public void Enum_stored_as_name_when_configured()
+    {
+        using var reg = new TempRegistry(EnumStorageMode.Name);
+
+        reg.Config.Set("Hue", Color.Green);
+
+        Assert.IsType<string>(reg.Config.GetValue("Hue")); // REG_SZ
+        Assert.Equal("Green", reg.Config.GetValue("Hue"));
+        Assert.Equal(Color.Green, reg.Config.Get<Color>("Hue"));
+    }
+
+    [Fact]
+    public void Enum_read_accepts_name_regardless_of_mode()
+    {
+        // Written as a name, read back by a Numeric-mode config.
+        using var reg = new TempRegistry();
+        reg.Config.Set("Hue", "Blue"); // raw REG_SZ
+
+        Assert.Equal(Color.Blue, reg.Config.Get<Color>("Hue"));
+    }
+
+    [Fact]
+    public void Enum_name_read_is_case_sensitive_by_default()
+    {
+        using var reg = new TempRegistry(EnumStorageMode.Name);
+        reg.Config.Set("Hue", "blue"); // wrong casing
+
+        Assert.Throws<ArgumentException>(() => reg.Config.Get<Color>("Hue"));
+    }
+
+    [Fact]
+    public void Enum_name_read_ignores_case_when_configured()
+    {
+        using var reg = new TempRegistry(EnumStorageMode.NameIgnoreCase);
+        reg.Config.Set("Hue", "blue"); // wrong casing tolerated
+
+        Assert.Equal(Color.Blue, reg.Config.Get<Color>("Hue"));
     }
 
     // ── Loop guard ───────────────────────────────────────────────────

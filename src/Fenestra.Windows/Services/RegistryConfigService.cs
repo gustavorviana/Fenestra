@@ -286,6 +286,8 @@ public sealed class RegistryConfigService : IRegistryConfig
             string v => (v, RegistryValueKind.String),
             byte[] v => (v, RegistryValueKind.Binary),
 
+            Enum v when _options.EnumStorage != EnumStorageMode.Numeric
+                     => (v.ToString(), RegistryValueKind.String),
             Enum v   => (Convert.ToInt32(v), RegistryValueKind.DWord),
 
             Guid v           => (v.ToString("D"), RegistryValueKind.String),
@@ -335,8 +337,11 @@ public sealed class RegistryConfigService : IRegistryConfig
         if (underlying == typeof(long))    return Convert.ToInt64(raw);
         if (underlying == typeof(ulong))   return unchecked((ulong)Convert.ToInt64(raw));
 
-        // Enum
-        if (underlying.IsEnum)             return Enum.ToObject(underlying, Convert.ToInt32(raw));
+        // Enum — accept either a stored name (REG_SZ) or numeric value (REG_DWORD).
+        if (underlying.IsEnum)
+            return raw is string enumName
+                ? Enum.Parse(underlying, enumName, _options.EnumStorage == EnumStorageMode.NameIgnoreCase)
+                : Enum.ToObject(underlying, Convert.ToInt32(raw));
 
         // String-backed types
         var str = raw.ToString()!;
