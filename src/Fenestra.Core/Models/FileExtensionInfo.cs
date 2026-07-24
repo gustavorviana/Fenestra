@@ -29,6 +29,28 @@ public readonly struct FileExtensionInfo : IEquatable<FileExtensionInfo>
         Description = description;
     }
 
+    /// <summary>
+    /// Normalizes an extension to the bare token used by <see cref="Extension"/>:
+    /// strips a leading <c>*.</c> or <c>.</c> and lowercases it. The wildcard
+    /// forms (<c>"*"</c>, <c>"*.*"</c>, <c>".*"</c>, empty) all normalize to <c>"*"</c>.
+    /// Examples: <c>".txt"</c> -&gt; <c>"txt"</c>, <c>"*.PNG"</c> -&gt; <c>"png"</c>.
+    /// </summary>
+    public static string NormalizeExtension(string extension)
+    {
+        if (string.IsNullOrWhiteSpace(extension))
+            return "*";
+
+        var value = extension.Trim();
+        if (value is "*" or "*.*" or ".*")
+            return "*";
+
+        if (value.StartsWith("*.", StringComparison.Ordinal))
+            value = value.Substring(2);
+
+        value = value.TrimStart('.');
+        return value.Length == 0 ? "*" : value.ToLowerInvariant();
+    }
+
     public override bool Equals(object? obj)
     {
         return obj is FileExtensionInfo info && Equals(info);

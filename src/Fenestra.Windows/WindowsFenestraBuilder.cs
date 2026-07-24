@@ -3,6 +3,7 @@ using Fenestra.Core.Models;
 using Fenestra.Windows.Models;
 using Fenestra.Windows.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Fenestra.Windows;
 
@@ -50,6 +51,9 @@ public class WindowsFenestraBuilder : FenestraBuilder
         // Register Windows-specific AppInfo
         if (appInfo is WindowsAppInfo windowsAppInfo)
             services.AddSingleton(windowsAppInfo);
+
+        // Replace the core managed file-extension provider with the shell-backed one.
+        services.Replace(ServiceDescriptor.Singleton<IFileExtensionProvider, WindowsFileExtensionProvider>());
 
         // Registry config
         var registryPath = $@"SOFTWARE\{appInfo.AppName}";

@@ -92,6 +92,9 @@ public class FenestraBuilder
         services.AddSingleton<IAppInfo>(appInfo);
         services.AddSingleton<IEventBus, EventBus>();
         services.TryAddSingleton<IExceptionHandler, DefaultExceptionHandler>();
+
+        // OS-neutral default; platform builders replace it with a native provider.
+        services.TryAddSingleton<IFileExtensionProvider, FallbackFileExtensionProvider>();
     }
 
     /// <summary>Builds the primary host with all configured services.</summary>
