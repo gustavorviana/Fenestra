@@ -1,6 +1,6 @@
 using Fenestra.Windows.Services;
 
-namespace Fenestra.Windows.Tests.Services;
+namespace Fenestra.Windows.Tests.Services.RegistryConfig;
 
 /// <summary>
 /// Unit tests for the internal <see cref="RegistryConverterRegistry"/> resolver —

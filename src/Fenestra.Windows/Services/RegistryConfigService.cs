@@ -250,9 +250,53 @@ public sealed class RegistryConfigService : IRegistryConfig
         }
     }
 
-    private static bool IsSection(Type type)
+    /// <summary>
+    /// Decides whether a property maps to a nested subkey (section) or a single value.
+    /// No attribute required: a type the value pipeline can store is a leaf; any other
+    /// instantiable complex class or struct is treated as a section.
+    /// <see cref="RegistrySectionAttribute"/> stays as an explicit override.
+    /// </summary>
+    private bool IsSection(Type type)
     {
-        return type.GetCustomAttribute<RegistrySectionAttribute>() is not null;
+        type = Nullable.GetUnderlyingType(type) ?? type;
+
+        // Explicit opt-in wins (e.g. a struct that also has a string TypeConverter).
+        if (type.GetCustomAttribute<RegistrySectionAttribute>() is not null)
+            return true;
+
+        // Anything the value pipeline can serialize is a leaf, never a section.
+        if (IsStorableValue(type))
+            return false;
+
+        // Convention: a struct (always instantiable) or a class with a public
+        // parameterless ctor becomes a nested section. Everything else falls through
+        // to the value pipeline (and throws there if it cannot be converted).
+        return type.IsValueType
+            ? !type.IsPrimitive && !type.IsEnum
+            : type.IsClass && type.GetConstructor(Type.EmptyTypes) is not null;
+    }
+
+    /// <summary>
+    /// True when <paramref name="type"/> is handled directly by the value conversion
+    /// pipeline (a scalar/known type, a custom converter target, or a string-backed
+    /// <see cref="TypeConverter"/>) — i.e. it stores as one registry value.
+    /// </summary>
+    private bool IsStorableValue(Type type)
+    {
+        if (_converters.Resolve(type) is not null) return true;
+
+        if (type.IsPrimitive || type.IsEnum) return true;   // int, bool, long, byte, double, …
+        if (type == typeof(string) || type == typeof(byte[]) || type == typeof(decimal))
+            return true;
+        if (type == typeof(Guid) || type == typeof(DateTime) || type == typeof(DateTimeOffset)
+            || type == typeof(TimeSpan) || type == typeof(Version) || type == typeof(Uri))
+            return true;
+
+        // Last-resort: same string TypeConverter fallback ConvertToRegistry uses.
+        var tc = TypeDescriptor.GetConverter(type);
+        return tc is not null
+            && tc.CanConvertTo(typeof(string))
+            && tc.CanConvertFrom(typeof(string));
     }
 
     // ── Type conversion ──────────────────────────────────────────────

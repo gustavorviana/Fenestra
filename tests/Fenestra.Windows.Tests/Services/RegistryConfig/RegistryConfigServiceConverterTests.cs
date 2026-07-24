@@ -1,8 +1,7 @@
-using Fenestra.Windows;
 using Fenestra.Windows.Services;
-using Microsoft.Win32;
+using Fenestra.Windows.Tests.Utils;
 
-namespace Fenestra.Windows.Tests.Services;
+namespace Fenestra.Windows.Tests.Services.RegistryConfig;
 
 /// <summary>
 /// Exercises <see cref="RegistryConfigService"/> custom-converter support against the
@@ -11,33 +10,6 @@ namespace Fenestra.Windows.Tests.Services;
 /// </summary>
 public sealed class RegistryConfigServiceConverterTests
 {
-    // ── Test fixtures ────────────────────────────────────────────────
-
-    /// <summary>Creates a unique HKCU key and deletes its subtree on dispose.</summary>
-    private sealed class TempRegistry : IDisposable
-    {
-        private readonly string _path;
-        public IRegistryConfig Config { get; }
-
-        public TempRegistry(params IRegistryValueConverter[] converters)
-            : this(EnumStorageMode.Numeric, converters) { }
-
-        public TempRegistry(EnumStorageMode enumStorage, params IRegistryValueConverter[] converters)
-        {
-            _path = $@"SOFTWARE\FenestraTests\{Guid.NewGuid():N}";
-            var options = new RegistryConfigOptions { EnumStorage = enumStorage };
-            foreach (var c in converters) options.Converters.Add(c);
-            Config = new RegistryConfigService(_path, options);
-        }
-
-        public void Dispose()
-        {
-            Config.Dispose();
-            try { Registry.CurrentUser.DeleteSubKeyTree(_path, throwOnMissingSubKey: false); }
-            catch { /* best-effort cleanup */ }
-        }
-    }
-
     private readonly record struct Fraction(int Num, int Den);
 
     /// <summary>Round-trips <see cref="Fraction"/> as a "num/den" string.</summary>
